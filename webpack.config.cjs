@@ -2,7 +2,7 @@ const path = require('path')
 
 module.exports =
   {
-    entry: path.resolve(__dirname, 'src/worklet/index.ts'),
+    entry: path.resolve(__dirname, 'src/worklet/SoundStretchNode.ts'),
     context: path.resolve(__dirname, '.'),
     module: {
       rules: [
