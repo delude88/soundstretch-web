@@ -1,11 +1,6 @@
 #!/bin/bash
 # Build the wasm module
 
-# Setup lib
-pushd lib || exit
-  . setup.sh
-popd || exit
-
 # macOS: Install dependencies via brew
 if [[ $OSTYPE == 'darwin'* ]]; then
   fetch_brew_dependency() {
@@ -29,9 +24,10 @@ fi
 # Make sure we have a 'build' folder.
 mkdir -p build
 
+# Fix SoundTouch COMPILE_OPTIONS (-Ofast is not supported by em++)
+sed -i '' 's/ set(COMPILE_OPTIONS -Ofast)/ #set(COMPILE_OPTIONS -Ofast)/g' lib/soundtouch/CMakeLists.txt
+
 # Now build
-pushd build || exit
-  emcmake cmake ..
-  echo "Building project ..."
-  emmake make
-popd || exit
+emcmake cmake -B build -S .
+echo "Building project ..."
+cmake --build build --target wasm

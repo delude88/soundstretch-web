@@ -46,9 +46,14 @@ add_executable(wasm
         src/bindings.cc
         )
 
+target_include_directories(wasm
+        PUBLIC
+        lib/soundtouch/include
+        )
+
 target_link_libraries(wasm
         PUBLIC
-        stretcher
+        SoundTouch
         embind
         )
 

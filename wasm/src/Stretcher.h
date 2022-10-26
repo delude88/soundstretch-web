@@ -13,7 +13,7 @@ using soundtouch::FIFOSampleBuffer;
 
 class Stretcher {
 public:
-    Stretcher(size_t sampleRate, size_t channel_count = 1);
+    explicit Stretcher(size_t sampleRate, size_t channel_count = 1);
     ~Stretcher();
 
     const char * getVersion();

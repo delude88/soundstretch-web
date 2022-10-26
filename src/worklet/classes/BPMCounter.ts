@@ -1,0 +1,28 @@
+import * as createModule from '../../../wasm/build/wasm.js'
+import { HeapArray } from './HeapArray'
+
+const RENDER_QUANTUM_FRAMES = 128
+
+class BPMCounter {
+  private kernel: any
+  private inputArray: HeapArray | undefined
+
+  constructor(channelCount: number) {
+    this.init(channelCount)
+  }
+
+  private init(channelCount: number) {
+    this.inputArray?.close()
+    createModule()
+      .then((module: any) => {
+        this.kernel = new module.BPMCounter()
+        this.inputArray = new HeapArray(module, RENDER_QUANTUM_FRAMES, channelCount)
+      })
+  }
+
+  public push(channels: Float32Array[]) {
+
+  }
+}
+
+export {BPMCounter}

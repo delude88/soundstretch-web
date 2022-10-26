@@ -1,9 +1,16 @@
-const path = require('path')
+const path = require('path');
 
-module.exports =
-  {
-    entry: path.resolve(__dirname, 'src/worklet/SoundStretchNode.ts'),
-    context: path.resolve(__dirname, '.'),
+const worklets = [
+  'src/worklet/rubberband-processor.ts',
+  'src/worklet/bpm-count-processor.ts',
+]
+
+const getFilename = (filepath) => path.parse(filepath).name
+
+const bundle = (worklet) => {
+  return {
+    entry: path.resolve(__dirname, worklet),
+    context: path.resolve(__dirname, "."),
     module: {
       rules: [
         {
@@ -13,21 +20,24 @@ module.exports =
         },
         {
           test: /\.(wasm)$/i,
-          type: 'asset/inline'
+          type: "asset/inline",
         }
-      ]
+      ],
     },
     resolve: {
-      extensions: ['.ts', '.js']
+      extensions: ['.ts', '.js'],
     },
     performance: {
       maxAssetSize: 900000,
       maxEntrypointSize: 900000
     },
-    target: 'webworker',
+    target: "webworker",
     output: {
       filename: `${getFilename(worklet)}.js`,
       path: path.resolve(__dirname, 'public'),
-      publicPath: ''
+      publicPath: '',
     }
   }
+}
+
+module.exports = worklets.map(worklet => bundle(worklet));
