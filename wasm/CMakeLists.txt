@@ -17,8 +17,8 @@ add_subdirectory(lib/soundtouch)
 
 # Common library providing simplified soundtouch classes
 add_library(stretcher
-        src/Stretcher.cpp
-        src/Stretcher.h
+        src/SoundStretch.cpp
+        src/SoundStretch.h
 )
 
 target_include_directories(stretcher
@@ -46,14 +46,9 @@ add_executable(wasm
         src/bindings.cc
         )
 
-target_include_directories(wasm
-        PUBLIC
-        lib/soundtouch/include
-        )
-
 target_link_libraries(wasm
         PUBLIC
-        SoundTouch
+        stretcher
         embind
         )
 

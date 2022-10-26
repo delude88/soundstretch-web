@@ -11,12 +11,12 @@
 using soundtouch::SoundTouch;
 using soundtouch::FIFOSampleBuffer;
 
-class Stretcher {
+class SoundStretch {
 public:
-    explicit Stretcher(size_t sampleRate, size_t channel_count = 1);
-    ~Stretcher();
+    explicit SoundStretch(size_t sampleRate, size_t channel_count = 1);
+    ~SoundStretch();
 
-    const char * getVersion();
+    size_t getVersion();
 
     void setTempo(double tempo);
 
@@ -32,7 +32,6 @@ private:
     void fetchProcessed();
 
     SoundTouch *sound_touch_;
-    size_t sample_rate_;
 
     FIFOSampleBuffer *output_buffer_;
 };

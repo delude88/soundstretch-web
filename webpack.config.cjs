@@ -1,8 +1,9 @@
 const path = require('path');
 
 const worklets = [
-  'src/worklet/rubberband-processor.ts',
+  'src/worklet/soundstretch-processor.ts',
   'src/worklet/bpm-count-processor.ts',
+  'src/worker/soundstretch.worker.ts'
 ]
 
 const getFilename = (filepath) => path.parse(filepath).name

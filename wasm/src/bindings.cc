@@ -1,11 +1,38 @@
 #include "emscripten/bind.h"
 #include "SoundTouch.h"
 #include "BPMDetect.h"
+#include "SoundStretch.h"
 
 using namespace emscripten;
 
 using soundtouch::SoundTouch;
 using soundtouch::BPMDetect;
+
+EMSCRIPTEN_BINDINGS(CLASS_SoundStretch) {
+    class_<SoundStretch>("SoundStretch")
+
+        .constructor<size_t, size_t>()
+
+        .function("getVersion",
+                  &SoundStretch::getVersion)
+
+        .function("setPitch",
+                  &SoundStretch::setPitch)
+
+        .function("setTempo",
+                  &SoundStretch::setTempo)
+
+        .function("pull",
+                  &SoundStretch::pull,
+                  allow_raw_pointers())
+
+        .function("push",
+                  &SoundStretch::push,
+                  allow_raw_pointers())
+
+        .function("getSamplesAvailable",
+                  &SoundStretch::getSamplesAvailable);
+}
 
 EMSCRIPTEN_BINDINGS(CLASS_SoundTouch) {
         class_<SoundTouch>("SoundTouch")

@@ -25,7 +25,7 @@ fi
 mkdir -p build
 
 # Fix SoundTouch COMPILE_OPTIONS (-Ofast is not supported by em++)
-sed -i '' 's/ set(COMPILE_OPTIONS -Ofast)/ #set(COMPILE_OPTIONS -Ofast)/g' lib/soundtouch/CMakeLists.txt
+sed -i '' 's/set(COMPILE_OPTIONS -Ofast)/set(COMPILE_OPTIONS -O3)/g' lib/soundtouch/CMakeLists.txt
 
 # Now build
 emcmake cmake -B build -S .

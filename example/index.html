@@ -31,6 +31,7 @@
 <script>
   let audioContext
   let source
+  let worker
   let processor
   let stream
   let fileBuffer
@@ -85,7 +86,7 @@
     audioContext = new AudioContext()
     await audioContext.resume()
     enableControls()
-    processor = await createWorkletNode(audioContext, 'rubberband-processor', '../public/rubberband-processor.js')
+    processor = await createWorkletNode(audioContext, 'soundstretch-processor', '../public/soundstretch-processor.js')
     console.log('Started audio engine')
     return {
       audioContext,
@@ -165,6 +166,25 @@
     }
   }
 
+  function stretchAudioBuffer(audioBuffer, tempo, pitch, cb) {
+    console.log(`Stretching audio buffer with tempo=${tempo} and pitch=${pitch}`)
+    const worker = new Worker("../public/soundstretch.worker.js")
+    worker.onmessage = ({data}) => {
+      console.info("Received message from stretcher")
+      const [event, payload] = JSON.parse(data)
+      cb(payload)
+    }
+    console.info("Sending stretch event")
+    const channels = []
+    for(let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+      channels.push(audioBuffer.getChannelData(channel))
+    }
+    worker.postMessage(JSON.stringify(['stretch', {
+      pitch: pitch,
+      tempo: tempo
+    }]), channels)
+  }
+
   async function playFile() {
     if (fileBuffer) {
       disablePlayer()
@@ -177,6 +197,17 @@
       if (!fileAudioBuffer) {
         fileAudioBuffer = await audioContext.decodeAudioData(fileBuffer)
       }
+
+      const cb = (audioBuffer) => {
+        console.info("Received stretched audio buffer")
+        fileAudioBuffer = audioBuffer
+        bufferSource.buffer = fileAudioBuffer
+      }
+
+      // Stretch if required
+      stretchAudioBuffer(fileAudioBuffer, 0.7, 1.2, cb);
+
+
       const bufferSource = audioContext.createBufferSource()
       bufferSource.buffer = fileAudioBuffer
       bufferSource.loop = true
@@ -184,8 +215,10 @@
       bufferSource.start()
 
       // Connect nodes
-      source.connect(processor)
-      processor.connect(audioContext.destination)
+      source.connect(audioContext.destination)
+      // TODO: RENABLE:
+      // source.connect(processor)
+      // processor.connect(audioContext.destination)
     }
   }
 
