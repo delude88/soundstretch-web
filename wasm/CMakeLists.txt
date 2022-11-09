@@ -44,6 +44,8 @@ target_link_libraries(demo
 # Build final wasm executable
 add_executable(wasm
         src/bindings.cc
+        src/Test.cpp
+        src/Test.h
         )
 
 target_link_libraries(wasm

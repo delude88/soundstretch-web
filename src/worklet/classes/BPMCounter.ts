@@ -1,5 +1,6 @@
 import * as createModule from '../../../wasm/build/wasm.js'
 import { HeapArray } from './HeapArray'
+import SoundStretchModule from '../../web/SoundStretchModule'
 
 const RENDER_QUANTUM_FRAMES = 128
 
@@ -14,8 +15,8 @@ class BPMCounter {
   private init(channelCount: number) {
     this.inputArray?.close()
     createModule()
-      .then((module: any) => {
-        this.kernel = new module.BPMCounter()
+      .then((module: SoundStretchModule) => {
+        this.kernel = new module.BPMDetect(channelCount, sampleRate)
         this.inputArray = new HeapArray(module, RENDER_QUANTUM_FRAMES, channelCount)
       })
   }

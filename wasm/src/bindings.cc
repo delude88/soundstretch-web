@@ -2,6 +2,7 @@
 #include "SoundTouch.h"
 #include "BPMDetect.h"
 #include "SoundStretch.h"
+#include "Test.h"
 
 using namespace emscripten;
 
@@ -91,5 +92,17 @@ EMSCRIPTEN_BINDINGS(CLASS_BPMDetect) {
                           &BPMDetect::getBpm)
                 .function("getBeats",
                           &BPMDetect::getBeats,
+                          allow_raw_pointers());
+}
+
+EMSCRIPTEN_BINDINGS(CLASS_Test) {
+        class_<Test>("Test")
+                .constructor<size_t>()
+
+                .function("write",
+                          &Test::write,
+                          allow_raw_pointers())
+                .function("read",
+                          &Test::read,
                           allow_raw_pointers());
 }
