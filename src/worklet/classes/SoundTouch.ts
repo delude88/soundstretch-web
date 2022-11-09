@@ -1,6 +1,6 @@
 import { HeapArray } from './HeapArray'
 import * as createModule from '../../../wasm/build/wasm.js'
-import SoundStretchModule from '../../web/SoundStretchModule'
+import { SoundStretchModule } from '../../web/SoundStretchModule'
 
 const RENDER_QUANTUM_FRAMES = 128
 

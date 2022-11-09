@@ -4,39 +4,18 @@
 
 #include <iostream>
 #include "Test.h"
-Test::Test(size_t size)
-    : _buffer(new float[size]), _readPtr(&_buffer[0]), _writePtr(&_buffer[0]), _endPtr(&_buffer[size - 1]) {
+
+Test::Test(size_t size, size_t channel_count)
+        : ChannelBuffer(size, channel_count) {
 }
-Test::~Test() {
-  delete[] _buffer;
-}
-bool Test::write(uintptr_t ptr, size_t length) {
-  auto input = reinterpret_cast<const float *const>(ptr);
-  std::cout << "first=" << input[0] << " center=" << input[(length / 2) - 1] << " last=" << input[length - 1]
-            << " size=" << length
-            << std::endl;
-  // Validate
-  for (size_t i = 0; i < length; ++i) {
-    if (input[i] != input[i]) {
-      return false;
+
+void Test::modify(float factor) {
+    const size_t num_samples = _first_channel_end_ptr - _buffer;
+    const size_t num_samples_available = _first_channel_write_ptr - _buffer;
+    for (size_t c = 0; c < _channel_count; ++c) {
+        for (size_t s = 0; s < num_samples_available; ++s) {
+            _buffer[s + c * num_samples] = _buffer[s + c * num_samples] * factor;
+        }
     }
-  }
-  // Write
-  const size_t actual = std::min(length, (size_t) (_endPtr - _writePtr));
-  for (size_t i = 0; i < actual; ++i) {
-    _writePtr[0] = input[i];
-    _writePtr++;
-  }
-  std::cout << "Written " << actual << std::endl;
-  return true;
-}
-void Test::read(uintptr_t ptr, size_t length) {
-  auto output = reinterpret_cast<float *>(ptr);
-  // Read
-  const size_t actual = std::min(length, (size_t) (_endPtr - _readPtr));
-  for (size_t i = 0; i < actual; ++i) {
-    output[0] = _readPtr[i];
-    _readPtr++;
-  }
-  std::cout << "Read " << actual << std::endl;
+    std::cout << "Modified " << _channel_count << " * " << num_samples_available << "/" << num_samples << std::endl;
 }

@@ -16,19 +16,46 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPTIMIZATION_FLAGS}")
 add_subdirectory(lib/soundtouch)
 
 # Common library providing simplified soundtouch classes
-add_library(stretcher
+add_library(ChannelBuffer
+        src/ChannelBuffer.h
+        src/ChannelBuffer.cpp)
+
+add_library(soundtouchclasses
         src/SoundStretch.cpp
         src/SoundStretch.h
+        src/EmbindSoundTouch.cpp
+        src/EmbindSoundTouch.h
 )
-
-target_include_directories(stretcher
+target_include_directories(soundtouchclasses
         PUBLIC
         lib/soundtouch/include
         )
 
-target_link_libraries(stretcher
+target_link_libraries(soundtouchclasses
         PUBLIC
         SoundTouch
+        ChannelBuffer
+        )
+
+add_library(rubberbandofficial
+        lib/rubberband-3.0.0/single/RubberBandSingle.cpp
+        )
+target_include_directories(rubberbandofficial
+        PUBLIC
+        lib/rubberband-3.0.0/rubberband)
+
+add_library(rubberbandclasses
+        src/RubberBandStretcher.cpp
+        src/RubberBandStretcher.h
+        )
+target_include_directories(rubberbandclasses
+        PUBLIC
+        lib/rubberband-3.0.0/rubberband
+        )
+target_link_libraries(rubberbandclasses
+        PUBLIC
+        rubberbandofficial
+        ChannelBuffer
         )
 
 # Build test executable for cpp
@@ -50,7 +77,8 @@ add_executable(wasm
 
 target_link_libraries(wasm
         PUBLIC
-        stretcher
+        soundtouchclasses
+        rubberbandclasses
         embind
         )
 

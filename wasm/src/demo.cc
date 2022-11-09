@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include "SoundStretch.h"
+#include "EmbindSoundTouch.h"
 
 int main(const int nParams, const char *const paramStr[]) {
     auto buffer_size = 128;
@@ -23,4 +24,11 @@ int main(const int nParams, const char *const paramStr[]) {
     stretcher->push(my_sample_pointer, buffer_size);
     std::cout << "Have now " << stretcher->getSamplesAvailable() << " samples" << std::endl;
     delete stretcher;
+
+    auto soundTouch = new EmbindSoundTouch();
+    soundTouch->setChannels(4);
+
+    std::cout << "soundTouch has " << soundTouch->numChannels() << " channels" << std::endl;
+
+    delete soundTouch;
 }

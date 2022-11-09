@@ -1,5 +1,5 @@
 export interface SoundTouch {
-  new(numChannels: number, sampleRate: number): SoundTouch
+  new(): SoundTouch
 
   getVersionId(): number
 
@@ -38,10 +38,36 @@ export interface SoundTouch {
   clear(): void
 }
 
+export interface SoundStretch {
+  new(sampleRate: number, numChannels: number): SoundStretch
+
+  getVersion(): number
+
+  setPitch(pitch: number): void
+
+  setTempo(tempo: number): void
+
+  push(ptr: number, length: number): void
+
+  pull(ptr: number, length: number): void
+
+  //getSamplesAvailable(): number
+}
+
+export interface RubberBandStretcher {
+  new(sampleRate: number, sampleSize: number, channelCount: number, timeRatio: number, pitchScale: number): RubberBandStretcher
+
+  push(ptr: number, length: number): void
+
+  pull(ptr: number, length: number): void
+}
+
 export interface Test {
-  new(size: number): Test
+  new(size: number, numChannels: number): Test
 
   write(ptr: number, length: number): boolean
+
+  modify(factor: number): void
 
   read(ptr: number, length: number): void
 }
@@ -59,5 +85,7 @@ export interface BPMDetect {
 export interface SoundStretchModule extends EmscriptenModule {
   BPMDetect: BPMDetect
   SoundTouch: SoundTouch
+  SoundStretch: SoundStretch
+  RubberBandStretcher: RubberBandStretcher
   Test: Test
 }

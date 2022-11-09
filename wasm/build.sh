@@ -1,6 +1,11 @@
 #!/bin/bash
 # Build the wasm module
 
+# Setup lib
+pushd lib || exit
+  . setup.sh
+popd || exit
+
 # macOS: Install dependencies via brew
 if [[ $OSTYPE == 'darwin'* ]]; then
   fetch_brew_dependency() {

@@ -7,21 +7,17 @@
 
 #include <cstddef>
 #include <cstdint>
+#include "ChannelBuffer.h"
 
-class Test {
- public:
-  explicit Test(size_t size);
-  ~Test();
+class Test : public ChannelBuffer {
+public:
+    explicit Test(size_t size, size_t channel_count = 1);
 
-  bool write(uintptr_t ptr, size_t length);
+    void modify(float factor);
 
-  void read(uintptr_t ptr, size_t length);
-
- private:
-  float *_buffer;
-  float *_writePtr;
-  float *_readPtr;
-  const float* _endPtr;
+    using ChannelBuffer::write;
+    
+    using ChannelBuffer::read;
 };
 
 #endif //WASM_TEST_H
