@@ -18,7 +18,7 @@ class SoundTouch {
     this.outputArray?.close()
     createModule()
       .then((module: SoundStretchModule) => {
-        this.kernel = new module.SoundTouch(channelCount, sampleRate)
+        this.kernel = new module.SoundTouch()
         this.inputArray = new HeapArray(module, RENDER_QUANTUM_FRAMES, channelCount)
         this.outputArray = new HeapArray(module, RENDER_QUANTUM_FRAMES, channelCount)
       })

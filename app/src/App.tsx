@@ -4,10 +4,21 @@ import './App.css'
 import { runTest } from './util'
 import { usePlayer } from './usePlayer'
 import { IoPlayOutline, IoStopOutline } from 'react-icons/io5'
+import { useTest } from './useTest'
 
 function App() {
   const audioContext = useMemo(() => new AudioContext(), [])
-  const { playing, volume, pitch, tempo, setTempo, setPitch, setPlaying, setVolume } = usePlayer('song.mp3', audioContext)
+  const {
+    playing,
+    volume,
+    pitch,
+    tempo,
+    setTempo,
+    setPitch,
+    setPlaying,
+    setVolume
+  } = usePlayer('song.mp3', audioContext)
+  const otherTest = useTest()
 
   const run = useCallback(() => {
     audioContext.resume()
@@ -59,6 +70,11 @@ function App() {
         <button onClick={run}>
           <h1>
             RUN TEST
+          </h1>
+        </button>
+        <button onClick={otherTest}>
+          <h1>
+            RUN OTHER TEST
           </h1>
         </button>
       </header>

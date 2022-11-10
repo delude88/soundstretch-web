@@ -48,10 +48,7 @@ const runTest = async (audioContext: AudioContext): Promise<AudioBufferSourceNod
 
   // Step 4: Write whole audio buffer at once
   console.info('WRITING AT ONCE')
-  const result = test.write(writePtr, writeArray.length)
-  if (!result) {
-    throw new Error('Test failed')
-  }
+  test.write(writePtr, writeArray.length)
 
   // Step 5: Write audio buffer in chunks
   const numWriteSlices = 12

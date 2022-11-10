@@ -4,6 +4,7 @@ import * as createModule from 'soundstretch-web/wasm'
 import { SoundStretchModule } from 'soundstretch-web'
 import { SharedAudioBuffer } from './SharedAudioBuffer'
 import debounce from 'lodash/debounce'
+import { createRubberBandSourceNode, RubberBandSourceNode } from 'soundstretch-web'
 
 const DEBOUNCE_DELAY = 500
 
@@ -43,8 +44,9 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
   useEffect(() => {
     if (module && audioBuffer && playing) {
       let abort = false
-      let audioBufferSourceNode: AudioBufferSourceNode | undefined
+      let audioBufferSourceNode: RubberBandSourceNode
       (async () => {
+        audioBufferSourceNode = await createRubberBandSourceNode(audioContext, './rubberband-source-processor.js')
         console.log(module)
         let buffer = audioBuffer
         const input = new SharedAudioBuffer(module, audioBuffer)
@@ -57,45 +59,11 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
           test.read(input.pointer, input.length)
         }
 
-        if (playbackSettings.pitch !== 1 || playbackSettings.tempo !== 1) {
-          console.info('Changing pitch and/or tempo of track')
-          const outputLength = Math.round(buffer.length * tempo)
-          console.log(`${buffer.length} * ${tempo} = ${outputLength}`)
-          const output = new SharedAudioBuffer(module, new AudioBuffer({
-            sampleRate: buffer.sampleRate,
-            numberOfChannels: buffer.numberOfChannels,
-            length: outputLength
-          }))
-          if (method === 'rubberband') {
-            const rubberBandStretcher = new module.RubberBandStretcher(input.sampleRate, input.sampleCount, input.numberOfChannels, tempo, pitch)
-            console.log('Writing')
-            rubberBandStretcher.push(input.pointer, input.length)
-            console.log('Reading')
-            const samplesRead = rubberBandStretcher.pull(output.pointer, output.length)
-            console.log('Read ' + samplesRead)
-          } else {
-            const soundStretch = new module.SoundStretch(input.sampleRate, input.numberOfChannels)
-            soundStretch.setTempo(tempo)
-            soundStretch.setPitch(pitch)
-            console.log('Writing')
-            soundStretch.push(input.pointer, input.length)
-            console.log('Written')
-            console.log('Reading')
-            soundStretch.pull(output.pointer, output.length)
-            console.log('Read')
-          }
-          buffer = output.read()
-          output.close()
-          console.log(buffer.getChannelData(0))
-        } else {
-          buffer = input.read()
-        }
-
         input.close()
         if (abort) return
-        audioBufferSourceNode = new AudioBufferSourceNode(audioContext)
+        audioBufferSourceNode = await createRubberBandSourceNode(audioContext, '')
         audioBufferSourceNode.connect(audioContext.destination)
-        audioBufferSourceNode.buffer = buffer
+        audioBufferSourceNode.setBuffer(buffer)
         audioBufferSourceNode.start()
         console.log('Playing')
       })()
@@ -103,6 +71,7 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
         abort = true
         if (audioBufferSourceNode) {
           audioBufferSourceNode.stop()
+          audioBufferSourceNode.close()
           console.log('Stopped')
         }
       }

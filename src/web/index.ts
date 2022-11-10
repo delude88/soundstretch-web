@@ -1,8 +1,13 @@
-export { createSoundStretchNode } from "./createSoundStretchNode"
-export { createBPMCounterNode } from "./createBPMCounterNode"
-export { createSoundStretchWorker } from "./createSoundStretchWorker"
-export {SoundStretchNode} from "./SoundStretchNode"
-export {SoundStretchWorker} from "./SoundStretchWorker"
-export {BPMCounterNode} from "./BPMCounterNode"
-export * from "./SoundStretchModule"
+export { createSoundStretchNode } from './createSoundStretchNode'
+export { createBPMCounterNode } from './createBPMCounterNode'
+export { createSoundStretchWorker } from './createSoundStretchWorker'
+export { createRubberBandSourceNode } from './createRubberBandSourceNode'
+export { SoundStretchNode } from './SoundStretchNode'
+export { RubberBandSourceNode } from './RubberBandSourceNode'
+export { SoundStretchWorker } from './SoundStretchWorker'
+export { BPMCounterNode } from './BPMCounterNode'
+export { AudioBufferTransport } from './AudioBufferTransport'
+export { ChannelTransport } from './ChannelTransport'
+export { Float32ChannelTransport } from './Float32ChannelTransport'
+export * from './SoundStretchModule'
 

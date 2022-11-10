@@ -54,18 +54,40 @@ export interface SoundStretch {
   //getSamplesAvailable(): number
 }
 
-export interface RubberBandStretcher {
-  new(sampleRate: number, sampleSize: number, channelCount: number, timeRatio: number, pitchScale: number): RubberBandStretcher
+export interface OfflineRubberBand {
+  new(sampleRate: number, channelCount: number, timeRatio: number, pitchScale: number): OfflineRubberBand
 
-  push(ptr: number, length: number): void
+  getTimeRatio(): number
 
-  pull(ptr: number, length: number): void
+  getPitchScale(): number
+
+  available(): number
+
+  setInput(ptr: number, numSamples: number): void
+
+  pull(ptr: number, numSamples: number): number
+}
+
+export interface RealtimeRubberBand {
+  new(sampleRate: number, channelCount: number, timeRatio: number, pitchScale: number): RealtimeRubberBand
+
+  getPitch(): number
+
+  getTempo(): number
+
+  setPitch(pitch: number): void
+
+  setTempo(tempo: number): void
+
+  push(ptr: number, numSamples: number): void
+
+  pull(ptr: number, numSamples: number): void
 }
 
 export interface Test {
   new(size: number, numChannels: number): Test
 
-  write(ptr: number, length: number): boolean
+  write(ptr: number, length: number): void
 
   modify(factor: number): void
 
@@ -86,6 +108,7 @@ export interface SoundStretchModule extends EmscriptenModule {
   BPMDetect: BPMDetect
   SoundTouch: SoundTouch
   SoundStretch: SoundStretch
-  RubberBandStretcher: RubberBandStretcher
+  OfflineRubberBand: OfflineRubberBand
+  RealtimeRubberBand: RealtimeRubberBand
   Test: Test
 }

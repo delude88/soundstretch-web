@@ -2,7 +2,7 @@
 #include "BPMDetect.h"
 //#include "EmbindSoundTouch.h"
 #include "SoundStretch.h"
-#include "RubberBandStretcher.h"
+#include "OfflineRubberBand.h"
 #include "Test.h"
 
 using namespace emscripten;
@@ -93,18 +93,28 @@ EMSCRIPTEN_BINDINGS(CLASS_BPMDetect) {
                           allow_raw_pointers());
 }
 
-EMSCRIPTEN_BINDINGS(CLASS_RubberBandStretcher) {
-        class_<RubberBandStretcher>("RubberBandStretcher")
+EMSCRIPTEN_BINDINGS(CLASS_OfflineRubberBand) {
+        class_<OfflineRubberBand>("OfflineRubberBand")
 
-                .constructor<size_t, size_t, size_t, double, double>()
+                .constructor<size_t, size_t, double, double>()
 
-                .function("pull",
-                          &RubberBandStretcher::pull,
+                .function("getTimeRatio",
+                          &OfflineRubberBand::getTimeRatio)
+
+                .function("getPitchScale",
+                          &OfflineRubberBand::getPitchScale)
+
+                .function("available",
+                          &OfflineRubberBand::available)
+
+                .function("setInput",
+                          &OfflineRubberBand::setInput,
                           allow_raw_pointers())
 
-                .function("push",
-                          &RubberBandStretcher::push,
-                          allow_raw_pointers());
+                .function("pull",
+                          &OfflineRubberBand::pull,
+                          allow_raw_pointers())
+        ;
 }
 
 EMSCRIPTEN_BINDINGS(CLASS_Test) {
@@ -112,13 +122,13 @@ EMSCRIPTEN_BINDINGS(CLASS_Test) {
                 .constructor<size_t, size_t>()
 
                 .function("write",
-                          select_overload<size_t(uintptr_t, size_t)>(&Test::write),
+                          &Test::write,
                           allow_raw_pointers())
 
                 .function("modify",
                           &Test::modify)
 
                 .function("read",
-                          select_overload<size_t(uintptr_t, size_t)>(&Test::read),
+                          &Test::read,
                           allow_raw_pointers());
 }

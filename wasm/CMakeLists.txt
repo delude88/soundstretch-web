@@ -45,8 +45,8 @@ target_include_directories(rubberbandofficial
         lib/rubberband-3.0.0/rubberband)
 
 add_library(rubberbandclasses
-        src/RubberBandStretcher.cpp
-        src/RubberBandStretcher.h
+        src/OfflineRubberBand.cpp
+        src/OfflineRubberBand.h
         )
 target_include_directories(rubberbandclasses
         PUBLIC
