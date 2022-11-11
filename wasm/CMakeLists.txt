@@ -7,7 +7,7 @@ project(wasm)
 
 set(CMAKE_CXX_STANDARD 17)
 set(OPTIMIZATION_FLAGS "-O3 -flto -std=c++17")
-if(CMAKE_CXX_COMPILER MATCHES "/em\\+\\+(-[a-zA-Z0-9.])?$")
+if (CMAKE_CXX_COMPILER MATCHES "/em\\+\\+(-[a-zA-Z0-9.])?$")
     set(OPTIMIZATION_FLAGS "${OPTIMIZATION_FLAGS} -Wno-warn-absolute-paths  --profiling")
 endif ()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZATION_FLAGS}")
@@ -16,16 +16,16 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPTIMIZATION_FLAGS}")
 add_subdirectory(lib/soundtouch)
 
 # Common library providing simplified soundtouch classes
-add_library(ChannelBuffer
-        src/ChannelBuffer.h
-        src/ChannelBuffer.cpp)
+add_library(ChannelTransport
+        src/ChannelTransport.h
+        src/ChannelTransport.cpp)
 
 add_library(soundtouchclasses
         src/SoundStretch.cpp
         src/SoundStretch.h
         src/EmbindSoundTouch.cpp
         src/EmbindSoundTouch.h
-)
+        )
 target_include_directories(soundtouchclasses
         PUBLIC
         lib/soundtouch/include
@@ -34,7 +34,7 @@ target_include_directories(soundtouchclasses
 target_link_libraries(soundtouchclasses
         PUBLIC
         SoundTouch
-        ChannelBuffer
+        ChannelTransport
         )
 
 add_library(rubberbandofficial
@@ -45,6 +45,8 @@ target_include_directories(rubberbandofficial
         lib/rubberband-3.0.0/rubberband)
 
 add_library(rubberbandclasses
+        src/RealtimeRubberBand.cpp
+        src/RealtimeRubberBand.h
         src/OfflineRubberBand.cpp
         src/OfflineRubberBand.h
         )
@@ -55,7 +57,7 @@ target_include_directories(rubberbandclasses
 target_link_libraries(rubberbandclasses
         PUBLIC
         rubberbandofficial
-        ChannelBuffer
+        ChannelTransport
         )
 
 # Build test executable for cpp

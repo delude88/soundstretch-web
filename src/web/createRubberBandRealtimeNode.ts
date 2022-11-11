@@ -1,4 +1,4 @@
-import { RubberBandSourceNode } from './RubberBandSourceNode'
+import { RubberBandRealtimeNode } from './RubberBandRealtimeNode'
 
 function cloneArrayBuffer(src: ArrayBuffer): ArrayBuffer  {
   const dst = new ArrayBuffer(src.byteLength);
@@ -6,8 +6,8 @@ function cloneArrayBuffer(src: ArrayBuffer): ArrayBuffer  {
   return dst;
 }
 
-function createWorkletAsRubberNode(context: BaseAudioContext, options?: AudioWorkletNodeOptions): RubberBandSourceNode {
-  const node = new AudioWorkletNode(context, 'rubberband-source-processor', options) as any
+function createWorkletAsRubberNode(context: BaseAudioContext, options?: AudioWorkletNodeOptions): RubberBandRealtimeNode {
+  const node = new AudioWorkletNode(context, 'rubberband-realtime-processor', options) as any
   node.setBuffer = (buffer: AudioBuffer) => {
     const channels: ArrayBuffer[] = []
     for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
@@ -25,9 +25,11 @@ function createWorkletAsRubberNode(context: BaseAudioContext, options?: AudioWor
     )
   }
   node.start = () => {
+    console.info("START?!?")
     node.port.postMessage({ event: 'start' })
   }
   node.stop = () => {
+    console.info("STOP?!?")
     node.port.postMessage({ event: 'stop' })
   }
   node.setPitch = (pitch: number) => {
@@ -36,20 +38,17 @@ function createWorkletAsRubberNode(context: BaseAudioContext, options?: AudioWor
   node.setTempo = (tempo: number) => {
     node.port.postMessage({ event: 'tempo', tempo: tempo })
   }
-  node.setHighQuality = (enabled: boolean) => {
-    node.port.postMessage({ event: 'quality', quality: enabled })
-  }
   node.close = () => {
     node.port.postMessage({ event: 'close' })
   }
-  return node as RubberBandSourceNode
+  return node as RubberBandRealtimeNode
 }
 
-async function createRubberBandSourceNode(
+async function createRubberBandRealtimeNode(
   context: BaseAudioContext,
   url: string,
   options?: AudioWorkletNodeOptions
-): Promise<RubberBandSourceNode> {
+): Promise<RubberBandRealtimeNode> {
   // ensure audioWorklet has been loaded
   try {
     return createWorkletAsRubberNode(context, options)
@@ -59,4 +58,4 @@ async function createRubberBandSourceNode(
   }
 }
 
-export { createRubberBandSourceNode }
+export { createRubberBandRealtimeNode }

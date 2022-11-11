@@ -1,4 +1,4 @@
-import { ChannelTransport } from './ChannelTransport'
+import { ChannelTransport } from 'soundstretch-web'
 
 class Float32ChannelTransport implements ChannelTransport<Float32Array[]> {
   private readonly _module: EmscriptenModule

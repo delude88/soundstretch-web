@@ -7,8 +7,8 @@
 #include <cmath>
 
 const RubberBand::RubberBandStretcher::Options kOptions = RubberBand::RubberBandStretcher::OptionProcessOffline |
-                                                          RubberBand::RubberBandStretcher::OptionPitchHighConsistency |
-                                                          RubberBand::RubberBandStretcher::OptionEngineFiner;
+                                                          RubberBand::RubberBandStretcher::OptionEngineFaster |
+                                                          RubberBand::RubberBandStretcher::OptionPitchHighSpeed;
 
 OfflineRubberBand::OfflineRubberBand(size_t sample_rate, size_t channel_count,
                                      double time_ratio, double pitch_scale) {
@@ -27,59 +27,84 @@ OfflineRubberBand::~OfflineRubberBand() {
     delete[] _scratch;
 }
 
-void OfflineRubberBand::setInput(uintptr_t input_ptr, size_t numSamples) {
-    _input = reinterpret_cast<float **>(input_ptr);
-    _input_size = numSamples;
-    _output_size = lround((double) _input_size * _stretcher->getTimeRatio());
-    _output = new float *[_stretcher->getChannelCount()];
-    for (size_t channel = 0; channel < _stretcher->getChannelCount(); ++channel) {
-        _output[channel] = new float[_output_size];
+void OfflineRubberBand::setInput(uintptr_t input_ptr, size_t input_size) {
+    // Init all buffers and copy input into it
+    auto input = reinterpret_cast<float *>(input_ptr);
+    _input_sample_size = input_size;
+    _output_sample_size = lround((double) _input_sample_size * _stretcher->getTimeRatio());
+    delete[] _output;
+    auto channel_count = getChannelCount();
+    _input = new float *[channel_count];
+    _output = new float *[channel_count];
+    for (size_t c = 0; c < channel_count; ++c) {
+        _input[c] = new float[_input_sample_size];
+        _output[c] = new float[_output_sample_size];
+        float sum1 = 0;
+        float sum2 = 0;
+        for (size_t s = 0; s < _input_sample_size; ++s) {
+            _input[c][s] = input[s + c * _input_sample_size];
+            sum1 += input[s + c * _input_sample_size];
+            sum2 += _input[c][s];
+        }
+        std::cout << "OfflineRubberBand::setInput copied " << _input_sample_size << " samples into channel " << c
+                  << " sum1="
+                  << sum1 << " sum2=" << sum2 << std::endl;
     }
-    _input_process_ptr = _input;
-    _output_write_ptr = _output;
-    _output_read_ptr = _output;
     std::cout << "Studying" << std::endl;
-    _stretcher->study(_input, _input_size, true);
+    _stretcher->study(_input, _input_sample_size, true);
     std::cout << "Preprocessing" << std::endl;
     process();
+    std::cout << "With " << available() << " samples available I'm ready to be pulled :-)" << std::endl;
 }
 
-size_t OfflineRubberBand::pull(uintptr_t output_ptr, size_t numSamples) {
-    auto output = reinterpret_cast<float **>(output_ptr);
-    const size_t numActualSamples = std::min(numSamples, available());
-    size_t numSamplesAvailableNow = _output_write_ptr - _output_read_ptr;
-    while (numSamplesAvailableNow < numActualSamples) {
-        auto numSamplesAvailableBefore = numSamplesAvailableNow;
+size_t OfflineRubberBand::pull(uintptr_t output_ptr, size_t output_size) {
+    auto output = reinterpret_cast<float *>(output_ptr);
+    const size_t num_samples = std::min(output_size, available());
+
+    size_t num_samples_pullable = _num_samples_processed - _num_samples_pulled;
+    while (num_samples_pullable < num_samples) {
+        auto num_samples_pullable_before = num_samples_pullable;
         process();
-        numSamplesAvailableNow = _output_write_ptr - _output_read_ptr;
-        if (numSamplesAvailableBefore == numSamplesAvailableNow) {
+        num_samples_pullable = _num_samples_processed - _num_samples_pulled;
+        if (num_samples_pullable_before <= num_samples_pullable) {
             std::cerr << "Nothing fetched?!? Maybe timeout?" << std::endl;
             return 0;
         }
     }
-    for (size_t c = 0; c < _stretcher->getChannelCount(); ++c) {
-        output[c] = _output_read_ptr[c];
+    for (size_t c = 0; c < getChannelCount(); ++c) {
+        for (size_t s = 0; s < num_samples; ++s) {
+            output[s + c * output_size] = _output[c][_num_samples_pulled + s];
+        }
     }
-    _output_read_ptr += numActualSamples;
-    return numActualSamples;
+    _num_samples_pulled += num_samples;
+    return num_samples;
 }
 
 void OfflineRubberBand::process() {
     auto samples_required = _stretcher->getSamplesRequired();
     while (samples_required > 0) {
-        _stretcher->process(_input_process_ptr, samples_required,
-                            _input_process_ptr - _input + 1 >= _input_size);
-        _input_process_ptr += samples_required;
+        for (size_t c = 0; c < getChannelCount(); ++c) {
+            //TODO: CHECK IF THIS WORKS
+            _scratch[c] = &_input[c][_num_samples_processed];
+        }
+        _stretcher->process(_scratch, samples_required,
+                            _num_samples_processed >= _input_sample_size);
+        _num_samples_processed += samples_required;
         samples_required = _stretcher->getSamplesRequired();
     }
-    fetch();
+    retrieve();
 }
 
-void OfflineRubberBand::fetch() {
+void OfflineRubberBand::retrieve() {
     auto samples_available = _stretcher->available();
     while (samples_available > 0) {
-        auto actual = _stretcher->retrieve(_output_write_ptr, samples_available);
-        _output_write_ptr += actual;
+        auto actual = _stretcher->retrieve(_scratch, samples_available);
+        for (size_t c = 0; c < getChannelCount(); ++c) {
+            for (size_t s = 0; s < actual; ++s) {
+                _output[c][_num_samples_retrieved + s] = _scratch[c][s];
+            }
+        }
+        _num_samples_retrieved += actual;
         samples_available = _stretcher->available();
     }
 }
@@ -94,9 +119,12 @@ double OfflineRubberBand::getPitchScale() const {
 }
 
 size_t OfflineRubberBand::available() const {
-    if (_output_size > 0) {
-        auto num_samples_read = _output_read_ptr - _output;
-        return _output_size - num_samples_read;
+    if (_output_sample_size > 0) {
+        return _output_sample_size - _num_samples_pulled;
     }
     return 0;
+}
+
+size_t OfflineRubberBand::getChannelCount() const {
+    return _stretcher->getChannelCount();
 }

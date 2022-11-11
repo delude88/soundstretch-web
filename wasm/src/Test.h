@@ -7,7 +7,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include "ChannelBuffer.h"
 
 class Test {
 public:

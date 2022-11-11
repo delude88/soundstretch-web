@@ -57,6 +57,8 @@ export interface SoundStretch {
 export interface OfflineRubberBand {
   new(sampleRate: number, channelCount: number, timeRatio: number, pitchScale: number): OfflineRubberBand
 
+  getChannelCount(): number
+
   getTimeRatio(): number
 
   getPitchScale(): number
@@ -69,19 +71,23 @@ export interface OfflineRubberBand {
 }
 
 export interface RealtimeRubberBand {
-  new(sampleRate: number, channelCount: number, timeRatio: number, pitchScale: number): RealtimeRubberBand
+  new(sampleRate: number, channelCount: number): RealtimeRubberBand
 
-  getPitch(): number
+  getChannelCount(): number
 
-  getTempo(): number
+  getTimeRatio(): number
 
-  setPitch(pitch: number): void
+  setTimeRatio(ratio: number): void
 
-  setTempo(tempo: number): void
+  getPitchScale(): number
+
+  setPitchScale(scale: number): void
+
+  available(): number
 
   push(ptr: number, numSamples: number): void
 
-  pull(ptr: number, numSamples: number): void
+  pull(ptr: number, numSamples: number): number
 }
 
 export interface Test {

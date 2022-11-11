@@ -4,7 +4,12 @@ import * as createModule from 'soundstretch-web/wasm'
 import { SoundStretchModule } from 'soundstretch-web'
 import { SharedAudioBuffer } from './SharedAudioBuffer'
 import debounce from 'lodash/debounce'
-import { createRubberBandSourceNode, RubberBandSourceNode } from 'soundstretch-web'
+import {
+  createRubberBandSourceNode,
+  createRubberBandRealtimeNode,
+  RubberBandSourceNode,
+  RubberBandRealtimeNode
+} from 'soundstretch-web'
 
 const DEBOUNCE_DELAY = 500
 
@@ -15,7 +20,7 @@ interface PlaybackSettings {
 }
 
 const usePlayer = (url: string, audioContext: AudioContext) => {
-  const [method, setMethod] = useState<'rubberband' | 'soundtouch'>('rubberband')
+  const [method, setMethod] = useState<'offline' | 'realtime' | 'soundtouch'>('realtime')
   const [volume, setVolume] = useState<number>(1)
   const [pitch, setPitch] = useState<number>(1)
   const [tempo, setTempo] = useState<number>(1)
@@ -44,28 +49,31 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
   useEffect(() => {
     if (module && audioBuffer && playing) {
       let abort = false
-      let audioBufferSourceNode: RubberBandSourceNode
+      let audioBufferSourceNode: RubberBandSourceNode | RubberBandRealtimeNode
       (async () => {
-        audioBufferSourceNode = await createRubberBandSourceNode(audioContext, './rubberband-source-processor.js')
-        console.log(module)
         let buffer = audioBuffer
-        const input = new SharedAudioBuffer(module, audioBuffer)
-        input.write()
         if (playbackSettings.volume !== 1) {
           console.info('Changing volume of track')
-          const test = new module.Test(audioBuffer.length, audioBuffer.numberOfChannels)
+          const input = new SharedAudioBuffer(module, buffer)
+          input.write()
+          const test = new module.Test(buffer.length, buffer.numberOfChannels)
           test.write(input.pointer, input.length)
           test.modify(playbackSettings.volume)
           test.read(input.pointer, input.length)
+          buffer = input.read()
+          input.close()
         }
 
-        input.close()
         if (abort) return
-        audioBufferSourceNode = await createRubberBandSourceNode(audioContext, '')
+        audioBufferSourceNode = method === 'realtime'
+          ? await createRubberBandRealtimeNode(audioContext, './rubberband-realtime-processor.js')
+          : await createRubberBandSourceNode(audioContext, './rubberband-source-processor.js')
         audioBufferSourceNode.connect(audioContext.destination)
+        audioBufferSourceNode.setPitch(pitch)
+        audioBufferSourceNode.setTempo(tempo)
         audioBufferSourceNode.setBuffer(buffer)
         audioBufferSourceNode.start()
-        console.log('Playing')
+        console.log('Started')
       })()
       return () => {
         abort = true
@@ -76,7 +84,7 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
         }
       }
     }
-  }, [module, audioBuffer, playing, audioContext, playbackSettings])
+  }, [module, audioBuffer, playing, audioContext, playbackSettings, method])
 
   useEffect(() => {
     // Load file

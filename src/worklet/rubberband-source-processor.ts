@@ -21,6 +21,7 @@ class RubberbandSourceProcessor extends AudioWorkletProcessor {
     this.port.onmessage = ({ data }) => {
       if (typeof data === 'object' && data['event']) {
         const { event } = data
+        console.info(event)
         switch (event) {
           case 'buffer': {
             if (!data.channels) throw new Error('Missing channels keys')
@@ -62,11 +63,15 @@ class RubberbandSourceProcessor extends AudioWorkletProcessor {
       }
     }
     createModule()
-      .then((module: SoundStretchModule) => this.module = module)
+      .then((module: SoundStretchModule) => {
+        this.module = module
+        this.reInit()
+      })
   }
 
   private reInit() {
     if (this.module && this.channels.length > 0) {
+      console.info(`reInit() with ${this.channels.length} channels, sampleRate=${this.sampleRate}, timeRatio=${this.timeRatio}, pitchScale=${this.pitchScale}`)
       const sampleSize = this.channels[0].length
       this.api = new this.module.OfflineRubberBand(
         this.sampleRate,
@@ -76,9 +81,10 @@ class RubberbandSourceProcessor extends AudioWorkletProcessor {
       )
       this.inputBuffer = new Float32ChannelTransport(this.module, sampleSize, this.channels.length)
       this.outputBuffer = new Float32ChannelTransport(this.module, RENDER_QUANTUM_FRAMES, this.channels.length)
-      this.inputBuffer.write(this.channels, sampleSize)
+      this.inputBuffer.write(this.channels)
       this.api.setInput(this.inputBuffer.getPointer(), sampleSize)
     } else {
+      console.info(`reInit() close`)
       this.inputBuffer?.close()
       this.outputBuffer?.close()
       this.inputBuffer = undefined
@@ -89,15 +95,12 @@ class RubberbandSourceProcessor extends AudioWorkletProcessor {
 
   process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
     if (this.playing) {
-      const numChannels = inputs[0]?.length || outputs[0]?.length
-      if (numChannels > 0) {
-        if (outputs?.length > 0) {
-          if (this.api && this.outputBuffer) {
-            const available = this.api.available()
-            if (available > 0) {
-              this.api.pull(this.outputBuffer.getPointer(), available)
-              this.outputBuffer.read(outputs[0], 0, available)
-            }
+      if (outputs && outputs[0]?.length > 0) {
+        if (this.api && this.outputBuffer) {
+          const available = this.api.available()
+          if (available > 0) {
+            this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
+            this.outputBuffer.read(outputs[0], 0, RENDER_QUANTUM_FRAMES)
           }
         }
       }

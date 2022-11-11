@@ -20,6 +20,11 @@ function App() {
   } = usePlayer('song.mp3', audioContext)
   const otherTest = useTest()
 
+  const handlePlaybackButton = useCallback(() => {
+    audioContext.resume()
+      .then(() => setPlaying(prev => !prev))
+  }, [setPlaying, audioContext])
+
   const run = useCallback(() => {
     audioContext.resume()
       .then(() => runTest(audioContext))
@@ -63,7 +68,7 @@ function App() {
           {Math.round(pitch * 100)}%
         </label>
         <p>
-          <a className='playbackButton' onClick={() => setPlaying(prev => !prev)}>
+          <a className='playbackButton' onClick={handlePlaybackButton}>
             {playing ? <IoStopOutline /> : <IoPlayOutline />}
           </a>
         </p>

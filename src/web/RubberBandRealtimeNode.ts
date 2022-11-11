@@ -1,4 +1,4 @@
-interface RubberBandSourceNode extends AudioWorkletNode {
+interface RubberBandRealtimeNode extends AudioWorkletNode {
   //TODO: Replace with ScheduledAudioWorkletNode implementation
   start(): void
 
@@ -13,4 +13,4 @@ interface RubberBandSourceNode extends AudioWorkletNode {
   close(): void
 }
 
-export { RubberBandSourceNode }
+export { RubberBandRealtimeNode }

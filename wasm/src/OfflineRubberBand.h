@@ -6,7 +6,6 @@
 #define WASM_OFFLINERUBBERBAND_H
 
 #include <RubberBandStretcher.h>
-#include "ChannelBuffer.h"
 
 class OfflineRubberBand {
 public:
@@ -18,29 +17,31 @@ public:
 
     ~OfflineRubberBand();
 
+    size_t getChannelCount() const;
+
     [[nodiscard]] double getTimeRatio() const;
 
     [[nodiscard]] double getPitchScale() const;
 
     [[nodiscard]] size_t available() const;
 
-    void setInput(uintptr_t input_ptr, size_t sample_size);
+    void setInput(uintptr_t input_ptr, size_t input_size);
 
-    size_t pull(uintptr_t output_ptr, size_t sample_size);
+    size_t pull(uintptr_t output_ptr, size_t output_size);
 
 protected:
     void process();
 
-    void fetch();
+    void retrieve();
 
     float **_input = nullptr;
-    float **_input_process_ptr = nullptr;
-    size_t _input_size = 0;
-
+    size_t _input_sample_size = 0;
     float **_output = nullptr;
-    float **_output_write_ptr = nullptr;
-    float **_output_read_ptr = nullptr;
-    size_t _output_size = 0;
+    size_t _output_sample_size = 0;
+
+    size_t _num_samples_processed = 0;
+    size_t _num_samples_retrieved = 0;
+    size_t _num_samples_pulled = 0;
 
     float **_scratch;
 
