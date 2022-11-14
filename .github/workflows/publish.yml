@@ -1,0 +1,48 @@
+name: Build and publish example
+
+run-name: Build'n'publish to github pages 🚀
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+
+env:
+  EM_VERSION: 3.1.23
+  EM_CACHE_FOLDER: 'emsdk-cache'
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Setup Pages
+        uses: actions/configure-pages@v2
+      - name: Setup cache
+        id: cache-system-libraries
+        uses: actions/cache@v2
+        with:
+          path: ${{env.EM_CACHE_FOLDER}}
+          key: ${{env.EM_VERSION}}-${{ runner.os }}
+      - uses: lukka/get-cmake@latest
+      - uses: mymindstorm/setup-emsdk@v11
+        with:
+          version: ${{env.EM_VERSION}}
+          actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
+      - name: Installing packages
+        run: |
+          npm install
+      - name: Building
+        run: |
+          npm run build
+      - name: Building app
+        run: |
+          cd app && npm install && npm run build
+      - name: Publish example to github pages
+        uses: JamesIves/github-pages-deploy-action@v4.4.0
+        with:
+          branch: gh-pages
+          folder: app/build/

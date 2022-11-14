@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 // @ts-ignore
 import * as createModule from 'soundstretch-web/wasm'
 import { SoundStretchModule } from 'soundstretch-web'
-import { SharedAudioBuffer } from './SharedAudioBuffer'
 import debounce from 'lodash/debounce'
 import {
   createRubberBandSourceNode,
@@ -14,23 +13,21 @@ import {
 const DEBOUNCE_DELAY = 500
 
 interface PlaybackSettings {
-  volume: number,
   pitch: number,
-  tempo: number
+  timeRatio: number
 }
 
 const usePlayer = (url: string, audioContext: AudioContext) => {
   const [method, setMethod] = useState<'offline' | 'realtime' | 'soundtouch'>('realtime')
-  const [volume, setVolume] = useState<number>(1)
-  const [pitch, setPitch] = useState<number>(1)
+  const [pitch, setPitch] = useState<number>(0)
   const [tempo, setTempo] = useState<number>(1)
   const [playing, setPlaying] = useState<boolean>(false)
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer>()
+  const [sourceNode, setSourceNode] = useState<RubberBandSourceNode | RubberBandRealtimeNode>()
   const [module, setModule] = useState<SoundStretchModule>()
   const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings>({
-    volume,
-    pitch,
-    tempo
+    pitch: 1,
+    timeRatio: 1
   })
   const debouncePlaybackSettings = useMemo(() => debounce((s) => setPlaybackSettings(s), DEBOUNCE_DELAY), [])
 
@@ -40,51 +37,60 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
 
   useEffect(() => {
     debouncePlaybackSettings({
-      volume,
-      pitch,
-      tempo
+      pitch: pitch ? Math.pow(2.0, pitch / 12.0) : 1,
+      timeRatio: (100 / tempo) / 100
     })
-  }, [volume, pitch, tempo])
+  }, [pitch, tempo])
 
   useEffect(() => {
-    if (module && audioBuffer && playing) {
-      let abort = false
+    // CREATE AUDIO SOURCE NODE
+    if (module && audioBuffer) {
       let audioBufferSourceNode: RubberBandSourceNode | RubberBandRealtimeNode
       (async () => {
-        let buffer = audioBuffer
-        if (playbackSettings.volume !== 1) {
-          console.info('Changing volume of track')
-          const input = new SharedAudioBuffer(module, buffer)
-          input.write()
-          const test = new module.Test(buffer.length, buffer.numberOfChannels)
-          test.write(input.pointer, input.length)
-          test.modify(playbackSettings.volume)
-          test.read(input.pointer, input.length)
-          buffer = input.read()
-          input.close()
-        }
-
-        if (abort) return
         audioBufferSourceNode = method === 'realtime'
           ? await createRubberBandRealtimeNode(audioContext, './rubberband-realtime-processor.js')
           : await createRubberBandSourceNode(audioContext, './rubberband-source-processor.js')
         audioBufferSourceNode.connect(audioContext.destination)
-        audioBufferSourceNode.setPitch(pitch)
-        audioBufferSourceNode.setTempo(tempo)
-        audioBufferSourceNode.setBuffer(buffer)
-        audioBufferSourceNode.start()
+        audioBufferSourceNode.setBuffer(audioBuffer)
         console.log('Started')
+        setSourceNode(audioBufferSourceNode)
       })()
       return () => {
-        abort = true
         if (audioBufferSourceNode) {
           audioBufferSourceNode.stop()
           audioBufferSourceNode.close()
           console.log('Stopped')
+          setSourceNode(undefined)
         }
       }
     }
-  }, [module, audioBuffer, playing, audioContext, playbackSettings, method])
+  }, [module, audioBuffer, playing, audioContext])
+
+  useEffect(() => {
+    if (sourceNode) {
+      if (playing) {
+        const node = sourceNode
+        node.start()
+        return () => {
+          node.stop()
+        }
+      }
+    }
+  }, [sourceNode, playing])
+
+  useEffect(() => {
+    if (sourceNode) {
+      console.log('timeRatio', playbackSettings.timeRatio)
+      sourceNode.setTempo(playbackSettings.timeRatio)
+    }
+  }, [sourceNode, playbackSettings.timeRatio])
+
+  useEffect(() => {
+    if (sourceNode) {
+      console.log('pitch', playbackSettings.timeRatio)
+      sourceNode.setPitch(playbackSettings.pitch)
+    }
+  }, [sourceNode, playbackSettings.pitch])
 
   useEffect(() => {
     // Load file
@@ -99,12 +105,10 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
     method,
     setMethod,
     playing,
-    volume,
     pitch,
     tempo,
     setPitch,
     setTempo,
-    setVolume,
     setPlaying
   }
 }

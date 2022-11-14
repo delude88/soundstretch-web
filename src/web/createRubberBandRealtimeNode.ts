@@ -1,9 +1,9 @@
 import { RubberBandRealtimeNode } from './RubberBandRealtimeNode'
 
-function cloneArrayBuffer(src: ArrayBuffer): ArrayBuffer  {
-  const dst = new ArrayBuffer(src.byteLength);
-  new Uint8Array(dst).set(new Uint8Array(src));
-  return dst;
+function cloneArrayBuffer(src: ArrayBuffer): ArrayBuffer {
+  const dst = new ArrayBuffer(src.byteLength)
+  new Uint8Array(dst).set(new Uint8Array(src))
+  return dst
 }
 
 function createWorkletAsRubberNode(context: BaseAudioContext, options?: AudioWorkletNodeOptions): RubberBandRealtimeNode {

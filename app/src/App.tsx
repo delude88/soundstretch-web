@@ -10,13 +10,11 @@ function App() {
   const audioContext = useMemo(() => new AudioContext(), [])
   const {
     playing,
-    volume,
     pitch,
     tempo,
     setTempo,
     setPitch,
     setPlaying,
-    setVolume
   } = usePlayer('song.mp3', audioContext)
   const otherTest = useTest()
 
@@ -34,17 +32,6 @@ function App() {
     <div className='App'>
       <header className='App-header'>
         <img src={logo} className='App-logo' alt='logo' />
-        <h3>Volume</h3>
-        <label>
-          <input type='range'
-                 onChange={(e) => setVolume(parseFloat(e.currentTarget.value))}
-                 value={volume}
-                 min={0.0}
-                 max={3.0}
-                 step={0.2}
-          />
-          {Math.round(volume * 100)}%
-        </label>
         <h3>Tempo</h3>
         <label>
           <input type='range'
@@ -61,11 +48,11 @@ function App() {
           <input type='range'
                  onChange={(e) => setPitch(parseFloat(e.currentTarget.value))}
                  value={pitch}
-                 min={0.9}
-                 max={1.1}
+                 min={-12}
+                 max={12}
                  step={0.05}
           />
-          {Math.round(pitch * 100)}%
+          {Math.round(pitch)} semitones
         </label>
         <p>
           <a className='playbackButton' onClick={handlePlaybackButton}>
