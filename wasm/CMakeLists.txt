@@ -71,20 +71,46 @@ target_link_libraries(demo
         )
 
 # Build final wasm executable
-add_executable(wasm
-        src/bindings.cc
+add_executable(soundtouch
+        src/soundtouch.cc
         src/Test.cpp
         src/Test.h
         )
 
-target_link_libraries(wasm
+target_link_libraries(soundtouch
         PUBLIC
         soundtouchclasses
         rubberbandclasses
         embind
         )
 
-set_target_properties(wasm
+set_target_properties(soundtouch
+        PROPERTIES
+        LINK_FLAGS
+        "${OPTIMIZATION_FLAGS} \
+        -s WASM=1 \
+        -s ALLOW_MEMORY_GROWTH=1 \
+        -s ERROR_ON_UNDEFINED_SYMBOLS=1 \
+        -s ENVIRONMENT=web \
+        -s AUTO_JS_LIBRARIES=0 \
+        -s FILESYSTEM=0 \
+        -s ASSERTIONS=0 \
+        -s MODULARIZE=1 \
+        -s SINGLE_FILE=1"
+        )
+
+# Build final wasm executable
+add_executable(rubberband
+        src/rubberband.cc
+        )
+
+target_link_libraries(rubberband
+        PUBLIC
+        rubberbandclasses
+        embind
+        )
+
+set_target_properties(rubberband
         PROPERTIES
         LINK_FLAGS
         "${OPTIMIZATION_FLAGS} \

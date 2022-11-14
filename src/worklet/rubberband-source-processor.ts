@@ -1,11 +1,11 @@
-import { OfflineRubberBand, SoundStretchModule } from '../web/SoundStretchModule'
-import * as createModule from '../../wasm/build/wasm.js'
+import { OfflineRubberBand, RubberBandModule } from '../web/RubberBandModule'
+import * as createModule from '../../wasm/build/rubberband.js'
 import { Float32ChannelTransport } from '../web/Float32ChannelTransport'
 
 const RENDER_QUANTUM_FRAMES = 128
 
 class RubberbandSourceProcessor extends AudioWorkletProcessor {
-  private module?: SoundStretchModule
+  private module?: RubberBandModule
   private api?: OfflineRubberBand
   private inputBuffer?: Float32ChannelTransport
   private outputBuffer?: Float32ChannelTransport
@@ -63,7 +63,7 @@ class RubberbandSourceProcessor extends AudioWorkletProcessor {
       }
     }
     createModule()
-      .then((module: SoundStretchModule) => {
+      .then((module: RubberBandModule) => {
         this.module = module
         this.reInit()
       })

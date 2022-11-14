@@ -42,4 +42,4 @@ fi
 # Now build
 emcmake cmake -B build -S .
 echo "Building project ..."
-cmake --build build --target wasm
+cmake --build build --target rubberband --target soundtouch

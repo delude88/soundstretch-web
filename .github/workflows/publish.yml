@@ -37,6 +37,9 @@ jobs:
       - name: Installing packages
         run: |
           npm install
+      - name: Prepare
+        run: |
+          mkdir -p public
       - name: Building
         run: |
           npm run build

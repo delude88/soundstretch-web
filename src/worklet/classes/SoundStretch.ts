@@ -1,5 +1,5 @@
 import { HeapArray } from './HeapArray'
-import * as createModule from '../../../wasm/build/wasm.js'
+import * as createModule from '../../../wasm/build/soundtouch.js'
 
 const RENDER_QUANTUM_FRAMES = 128
 

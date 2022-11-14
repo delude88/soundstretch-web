@@ -1,4 +1,4 @@
-import * as createModule from '../../../wasm/build/wasm.js'
+import * as createModule from '../../../wasm/build/soundtouch.js'
 import { HeapArray } from './HeapArray'
 import { SoundStretchModule } from '../../web/SoundStretchModule'
 

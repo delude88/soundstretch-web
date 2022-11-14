@@ -1,9 +1,6 @@
 #include "emscripten/bind.h"
 #include "BPMDetect.h"
-//#include "EmbindSoundTouch.h"
 #include "SoundStretch.h"
-#include "OfflineRubberBand.h"
-#include "RealtimeRubberBand.h"
 #include "Test.h"
 
 using namespace emscripten;
@@ -12,25 +9,25 @@ using soundtouch::SoundTouch;
 using soundtouch::BPMDetect;
 
 EMSCRIPTEN_BINDINGS(CLASS_SoundStretch) {
-        class_<SoundStretch>("SoundStretch")
+    class_<SoundStretch>("SoundStretch")
 
-                .constructor<size_t, size_t>()
+        .constructor<size_t, size_t>()
 
-                .class_function("getVersion", &SoundStretch::getVersion)
+        .class_function("getVersion", &SoundStretch::getVersion)
 
-                .function("setPitch",
-                          &SoundStretch::setPitch)
+        .function("setPitch",
+                  &SoundStretch::setPitch)
 
-                .function("setTempo",
-                          &SoundStretch::setTempo)
+        .function("setTempo",
+                  &SoundStretch::setTempo)
 
-                .function("pull",
-                          &SoundStretch::pull,
-                          allow_raw_pointers())
+        .function("pull",
+                  &SoundStretch::pull,
+                  allow_raw_pointers())
 
-                .function("push",
-                          &SoundStretch::push,
-                          allow_raw_pointers());
+        .function("push",
+                  &SoundStretch::push,
+                  allow_raw_pointers());
 }
 
 /*
@@ -81,100 +78,31 @@ EMSCRIPTEN_BINDINGS(CLASS_SoundTouch) {
  */
 
 EMSCRIPTEN_BINDINGS(CLASS_BPMDetect) {
-        class_<BPMDetect>("BPMDetect")
-                .constructor<int, int>()
+    class_<BPMDetect>("BPMDetect")
+        .constructor<int, int>()
 
-                .function("inputSamples",
-                          &BPMDetect::inputSamples,
-                          allow_raw_pointers())
-                .function("getBpm",
-                          &BPMDetect::getBpm)
-                .function("getBeats",
-                          &BPMDetect::getBeats,
-                          allow_raw_pointers());
-}
-
-EMSCRIPTEN_BINDINGS(CLASS_OfflineRubberBand) {
-        class_<OfflineRubberBand>("OfflineRubberBand")
-
-                .constructor<size_t, size_t, double, double>()
-
-                .function("getChannelCount",
-                          &OfflineRubberBand::getChannelCount)
-
-                .function("getTimeRatio",
-                          &OfflineRubberBand::getTimeRatio)
-
-                .function("getPitchScale",
-                          &OfflineRubberBand::getPitchScale)
-
-                .function("available",
-                          &OfflineRubberBand::available)
-
-                .function("setInput",
-                          &OfflineRubberBand::setInput,
-                          allow_raw_pointers())
-
-                .function("pull",
-                          &OfflineRubberBand::pull,
-                          allow_raw_pointers())
-        ;
-}
-
-EMSCRIPTEN_BINDINGS(CLASS_RealtimeRubberBand) {
-        class_<RealtimeRubberBand>("RealtimeRubberBand")
-
-                .constructor<size_t, size_t>()
-
-                .function("getChannelCount",
-                          &RealtimeRubberBand::getChannelCount)
-
-                .function("getSamplesRequired",
-                          &RealtimeRubberBand::getSamplesRequired)
-
-                .function("getPreferredStartPad",
-                          &RealtimeRubberBand::getPreferredStartPad)
-
-                .function("getStartDelay",
-                          &RealtimeRubberBand::getStartDelay)
-
-                .function("getTimeRatio",
-                          &RealtimeRubberBand::getTimeRatio)
-
-                .function("getPitchScale",
-                          &RealtimeRubberBand::getPitchScale)
-
-                .function("setTimeRatio",
-                          &RealtimeRubberBand::setTimeRatio)
-
-                .function("setPitchScale",
-                          &RealtimeRubberBand::setPitchScale)
-
-                .function("available",
-                          &RealtimeRubberBand::available)
-
-                .function("push",
-                          &RealtimeRubberBand::push,
-                          allow_raw_pointers())
-
-                .function("pull",
-                          &RealtimeRubberBand::pull,
-                          allow_raw_pointers())
-        ;
+        .function("inputSamples",
+                  &BPMDetect::inputSamples,
+                  allow_raw_pointers())
+        .function("getBpm",
+                  &BPMDetect::getBpm)
+        .function("getBeats",
+                  &BPMDetect::getBeats,
+                  allow_raw_pointers());
 }
 
 EMSCRIPTEN_BINDINGS(CLASS_Test) {
-        class_<Test>("Test")
-                .constructor<size_t, size_t>()
+    class_<Test>("Test")
+        .constructor<size_t, size_t>()
 
-                .function("write",
-                          &Test::write,
-                          allow_raw_pointers())
+        .function("write",
+                  &Test::write,
+                  allow_raw_pointers())
 
-                .function("modify",
-                          &Test::modify)
+        .function("modify",
+                  &Test::modify)
 
-                .function("read",
-                          &Test::read,
-                          allow_raw_pointers());
+        .function("read",
+                  &Test::read,
+                  allow_raw_pointers());
 }
