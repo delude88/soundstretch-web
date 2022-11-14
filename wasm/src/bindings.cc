@@ -129,6 +129,15 @@ EMSCRIPTEN_BINDINGS(CLASS_RealtimeRubberBand) {
                 .function("getChannelCount",
                           &RealtimeRubberBand::getChannelCount)
 
+                .function("getSamplesRequired",
+                          &RealtimeRubberBand::getSamplesRequired)
+
+                .function("getPreferredStartPad",
+                          &RealtimeRubberBand::getPreferredStartPad)
+
+                .function("getStartDelay",
+                          &RealtimeRubberBand::getStartDelay)
+
                 .function("getTimeRatio",
                           &RealtimeRubberBand::getTimeRatio)
 

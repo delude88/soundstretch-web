@@ -25,11 +25,10 @@ function createWorkletAsRubberNode(context: BaseAudioContext, options?: AudioWor
     )
   }
   node.start = () => {
-    console.info("START?!?")
     node.port.postMessage({ event: 'start' })
   }
   node.stop = () => {
-    console.info("STOP?!?")
+    node.port.postMessage('stop')
     node.port.postMessage({ event: 'stop' })
   }
   node.setPitch = (pitch: number) => {

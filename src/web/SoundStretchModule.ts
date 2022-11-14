@@ -75,6 +75,12 @@ export interface RealtimeRubberBand {
 
   getChannelCount(): number
 
+  getSamplesRequired(): number
+
+  getPreferredStartPad(): number
+
+  getStartDelay(): number
+
   getTimeRatio(): number
 
   setTimeRatio(ratio: number): void

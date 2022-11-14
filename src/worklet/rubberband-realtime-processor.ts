@@ -4,6 +4,10 @@ import { Float32ChannelTransport } from '../web/Float32ChannelTransport'
 
 const RENDER_QUANTUM_FRAMES = 128
 
+const TRACE = true
+
+const trace = (message: string) => TRACE ? console.log(message) : undefined
+
 class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
   private module?: SoundStretchModule
   private api?: RealtimeRubberBand
@@ -21,16 +25,20 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
   private buffer?: Float32Array[]
   private channelCount: number = 1
   private running: boolean = true
+  private startDelay: number = 0
   private playing: boolean = false
   private position: number = 0
   private endPosition: number = Number.MAX_VALUE
 
+
   constructor() {
     super()
+    this.port.onmessageerror = (err) => {
+      console.error('onmessageerror', err)
+    }
     this.port.onmessage = ({ data }) => {
       if (typeof data === 'object' && data['event']) {
         const { event } = data
-        console.info("GOT EVENT", event)
         switch (event) {
           case 'buffer': {
             if (!data.channels) throw new Error('Missing channels keys')
@@ -44,12 +52,10 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
             break
           }
           case 'start': {
-            console.info("this.playing = true")
             this.playing = true
             break
           }
           case 'stop': {
-            console.info("this.playing = false")
             this.playing = false
             break
           }
@@ -83,7 +89,7 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
     if (this.module && this.channelCount > 0) {
       console.info(`reInit() ${this.buffer ? 'in buffered mode' : 'in live mode'} with ${this.channelCount} channels, sampleRate=${this.settings.sampleRate}, timeRatio=${this.settings.timeRatio}, pitchScale=${this.settings.pitchScale}`)
 
-      this.inputBuffer = new Float32ChannelTransport(this.module, RENDER_QUANTUM_FRAMES, this.channelCount)
+      this.inputBuffer = new Float32ChannelTransport(this.module, 8196, this.channelCount)
       this.outputBuffer = new Float32ChannelTransport(this.module, RENDER_QUANTUM_FRAMES, this.channelCount)
 
       this.api = new this.module.RealtimeRubberBand(
@@ -92,6 +98,21 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
       )
       this.api.setPitchScale(this.settings.pitchScale)
       this.api.setTimeRatio(this.settings.timeRatio)
+
+      // Push start pad
+      const preferredStartPad = this.api.getPreferredStartPad()
+      if (preferredStartPad > 0) {
+        const startPad: Float32Array[] = []
+        for (let c = 0; c < this.channelCount; ++c) {
+          startPad[c] = new Float32Array(preferredStartPad)
+        }
+        this.inputBuffer.write(startPad)
+        console.log(`Feeding ${preferredStartPad} start pad samples`)
+        this.api.push(this.inputBuffer.getPointer(), preferredStartPad)
+      }
+      this.startDelay = this.api.getStartDelay()
+      this.feedBuffer(RENDER_QUANTUM_FRAMES)
+      //console.log(`API requires now ${this.api.getSamplesRequired()} samples, start pad of of ${this.api.getPreferredStartPad()} and start delay of ${this.api.getStartDelay()}`)
     } else {
       this.inputBuffer?.close()
       this.outputBuffer?.close()
@@ -101,40 +122,78 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
     }
   }
 
+  private feedBuffer(minSamples: number = 0) {
+    if (this.buffer && this.api && this.inputBuffer) {
+      const samplesRequired = this.api.getSamplesRequired()
+      const required = samplesRequired || minSamples
+      if (required > 0) {
+        const actual = Math.min(this.endPosition - this.position, required)
+        trace(`Feeding ${actual} of ${samplesRequired} required samples`)
+        this.inputBuffer.write(
+          this.buffer.map(channelBuffer => channelBuffer.subarray(this.position))
+        )
+        this.api.push(this.inputBuffer.getPointer(), actual)
+        this.position += actual
+      }
+    }
+  }
+
   process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
     // Prepare
-    if (!this.buffer && this.channelCount !== inputs[0].length) {
-      this.channelCount = inputs[0].length
-      this.reInit()
-    }
 
-    if (this.api) {
-      if (this.inputBuffer) {
-        if (!this.buffer) {
-          // Push live input samples
+    if (!this.buffer) {
+      // Live chain (no buffer given)
+
+      // Assure channel count
+      if (this.channelCount !== inputs[0].length) {
+        this.channelCount = inputs[0].length
+        this.reInit()
+      }
+
+      if (this.api) {
+        // Push live input samples
+        if (this.inputBuffer && inputs[0].length > 0 && inputs[0][0].length > 0) {
           this.inputBuffer.write(inputs[0])
           this.api.push(this.inputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
-        } else if (this.playing && this.position < this.endPosition) {
-          console.log("Pushing")
-          // Push RENDER_QUANTUM_FRAMES samples of buffer
-          const slice: Float32Array[] = this.buffer.map(channelBuffer => channelBuffer.slice(this.position))
-          this.inputBuffer.write(slice)
+        }
 
-          this.api.push(this.inputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
-          this.position += RENDER_QUANTUM_FRAMES
+        // Pull output
+        if (this.outputBuffer) {
+          if (this.api?.available() >= RENDER_QUANTUM_FRAMES) {
+            this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
+            this.outputBuffer.read(outputs[0])
+          }
         }
       }
+    } else {
+      // Buffered chain
+      if (this.playing && this.position < this.endPosition) {
+        // Playing
+        if (this.api && this.inputBuffer && this.outputBuffer) {
+          // Feed
 
-      // Pull samples if available
-      if (this.outputBuffer) {
-        if (this.api.available() >= RENDER_QUANTUM_FRAMES) {
-          const actual = this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
-          this.outputBuffer.read(outputs[0])
-          console.log(`${this.api.available()} were available, read ${actual}`)
-          //console.log(outputs[0][0][0], outputs[0][0][Math.round((RENDER_QUANTUM_FRAMES - 1) / 2)], outputs[0][0][RENDER_QUANTUM_FRAMES - 1])
+          // Apply start delay
+          if (this.startDelay > 0) {
+            const available = this.api.available()
+            if (available >= this.startDelay) {
+              trace(`Skipping start delay of ${this.startDelay} samples`)
+              this.api.pull(this.outputBuffer.getPointer(), this.startDelay)
+              this.startDelay = 0
+            }
+          }
+
+          // Read at least RENDER_QUANTUM_FRAMES samples
+          const available = this.api.available()
+          if (available >= RENDER_QUANTUM_FRAMES) {
+            trace(`Fetching ${RENDER_QUANTUM_FRAMES} of ${available} available samples`)
+            this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
+            this.outputBuffer.read(outputs[0])
+          }
+          this.feedBuffer()
         }
       }
     }
+
     return this.running
   }
 
@@ -144,7 +203,7 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
     this.inputBuffer = undefined
     this.outputBuffer = undefined
     this.api = undefined
-    //this.port.onmessage = null
+    this.port.onmessage = null
     this.running = false
   }
 }

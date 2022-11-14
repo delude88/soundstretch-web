@@ -6,6 +6,15 @@
 #define WASM_REALTIMERUBBERBAND_H
 
 #include <RubberBandStretcher.h>
+#include <queue>
+#include "../lib/rubberband-3.0.0/src/common/RingBuffer.h"
+
+#define USE_BUFFER
+//#define USE_QUEUE
+
+#if defined(USE_QUEUE) || defined(USE_BUFFER)
+#define BUFFERING
+#endif
 
 class RealtimeRubberBand {
 public:
@@ -14,6 +23,12 @@ public:
     ~RealtimeRubberBand();
 
     [[nodiscard]] size_t getChannelCount() const;
+
+    [[nodiscard]] size_t getSamplesRequired() const;
+
+    [[nodiscard]] size_t getPreferredStartPad() const;
+
+    [[nodiscard]] size_t getStartDelay() const;
 
     [[nodiscard]] double getTimeRatio() const;
 
@@ -30,10 +45,15 @@ public:
     size_t pull(uintptr_t output_ptr, size_t output_size);
 
 private:
-    void updateRatio();
+#if defined(USE_QUEUE) || defined(USE_BUFFER)
+    void buffer();
+#endif
 
-    size_t _num_start_pad_samples = 0;
-    size_t _num_start_delay_samples = 0;
+#if defined(USE_QUEUE)
+    std::queue<float> **_queue;
+#elif defined(USE_BUFFER)
+    RubberBand::RingBuffer<float> **_buffer;
+#endif
 
     float **_scratch;
 

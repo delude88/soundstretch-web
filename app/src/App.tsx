@@ -50,8 +50,8 @@ function App() {
           <input type='range'
                  onChange={(e) => setTempo(parseFloat(e.currentTarget.value))}
                  value={tempo}
-                 min={0.9}
-                 max={1.1}
+                 min={0.5}
+                 max={2.0}
                  step={0.05}
           />
           {Math.round(tempo * 100)}%
