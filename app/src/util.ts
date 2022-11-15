@@ -1,7 +1,7 @@
 import { SharedAudioBuffer } from './SharedAudioBuffer'
 import { SoundStretchModule } from 'soundstretch-web'
 // @ts-ignore
-import * as createModule from 'soundstretch-web/wasm'
+import * as createModule from 'soundstretch-web/wasm/soundtouch'
 
 const areAudioBufferEqual = (a: AudioBuffer, b: AudioBuffer): boolean => {
   if (a.length !== b.length) {

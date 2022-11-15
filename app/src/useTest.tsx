@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 // @ts-ignore
-import * as createModule from 'soundstretch-web/wasm'
+import * as createModule from 'soundstretch-web/wasm/soundtouch'
 import { SoundStretchModule } from 'soundstretch-web'
 import { Float32ChannelTransport } from './Float32ChannelTransport'
 

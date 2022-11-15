@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 // @ts-ignore
-import * as createModule from 'soundstretch-web/wasm'
+import * as createModule from 'soundstretch-web/wasm/rubberband'
 import { SoundStretchModule } from 'soundstretch-web'
 import debounce from 'lodash/debounce'
 import {

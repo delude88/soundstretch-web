@@ -22,7 +22,8 @@
       "es2015": "./dist/esm/index.js",
       "default": "./dist/esm5/index.js"
     },
-    "./wasm": "./public/wasm.js",
+    "./wasm/rubberband": "./public/rubberband.js",
+    "./wasm/soundtouch": "./public/soundtouch.js",
     "./package.json": "./package.json"
   },
   "files": [
