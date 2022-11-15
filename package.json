@@ -2,6 +2,7 @@
   "name": "soundstretch-web",
   "version": "0.0.1",
   "description": "Using Soundstretch in web via WebAssembly",
+  "homepage": "https://delude88.github.io/soundstretch-web/",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm5/index.js",
   "es2015": "./dist/esm/index.js",
@@ -59,7 +60,6 @@
   "bugs": {
     "url": "https://github.com/delude88/soundstretch-web/issues"
   },
-  "homepage": "https://github.com/delude88/soundstretch-web#readme",
   "devDependencies": {
     "@babel/core": "^7.19.6",
     "@babel/preset-env": "^7.19.4",
