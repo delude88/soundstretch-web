@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 // @ts-ignore
 import * as createModule from 'soundstretch-web/wasm/rubberband'
-import { SoundStretchModule } from 'soundstretch-web'
+import { SoundTouchModule } from 'soundstretch-web'
 import debounce from 'lodash/debounce'
 import {
   createRubberBandSourceNode,
@@ -24,15 +24,16 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
   const [playing, setPlaying] = useState<boolean>(false)
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer>()
   const [sourceNode, setSourceNode] = useState<RubberBandSourceNode | RubberBandRealtimeNode>()
-  const [module, setModule] = useState<SoundStretchModule>()
+  const [module, setModule] = useState<SoundTouchModule>()
   const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings>({
     pitch: 1,
     timeRatio: 1
   })
   const debouncePlaybackSettings = useMemo(() => debounce((s) => setPlaybackSettings(s), DEBOUNCE_DELAY), [])
+  const ready = useMemo<boolean>(() => !!audioBuffer, [audioBuffer])
 
   useEffect(() => {
-    createModule().then((m: SoundStretchModule) => setModule(m))
+    createModule().then((m: SoundTouchModule) => setModule(m))
   }, [])
 
   useEffect(() => {
@@ -92,7 +93,8 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
 
   useEffect(() => {
     // Load file
-    if(audioContext) {
+    if (audioContext) {
+      console.info(`Loading ${url}`)
       fetch(url)
         .then(result => result.arrayBuffer())
         .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
@@ -102,6 +104,7 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
 
 
   return {
+    ready,
     method,
     setMethod,
     playing,

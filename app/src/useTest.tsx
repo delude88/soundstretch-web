@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 // @ts-ignore
 import * as createModule from 'soundstretch-web/wasm/soundtouch'
-import { Float32ChannelTransport, SoundStretchModule } from 'soundstretch-web'
+import { Float32ChannelTransport, SoundTouchModule } from 'soundstretch-web'
 
 const useTest = () => {
-  const [module, setModule] = useState<SoundStretchModule>()
+  const [module, setModule] = useState<SoundTouchModule>()
 
   useEffect(() => {
-    createModule().then((m: SoundStretchModule) => setModule(m))
+    createModule().then((m: SoundTouchModule) => setModule(m))
   }, [])
 
   return useCallback(() => {

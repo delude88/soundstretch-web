@@ -1,6 +1,6 @@
 import { HeapArray } from './HeapArray'
 import * as createModule from '../../../wasm/build/soundtouch.js'
-import { SoundStretchModule } from '../../web/SoundStretchModule'
+import { SoundTouchModule } from '../../web/SoundTouchModule'
 
 const RENDER_QUANTUM_FRAMES = 128
 
@@ -17,7 +17,7 @@ class SoundTouch {
     this.inputArray?.close()
     this.outputArray?.close()
     createModule()
-      .then((module: SoundStretchModule) => {
+      .then((module: SoundTouchModule) => {
         this.kernel = new module.SoundTouch()
         this.inputArray = new HeapArray(module, RENDER_QUANTUM_FRAMES, channelCount)
         this.outputArray = new HeapArray(module, RENDER_QUANTUM_FRAMES, channelCount)

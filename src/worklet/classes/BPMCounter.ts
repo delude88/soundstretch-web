@@ -1,6 +1,6 @@
 import * as createModule from '../../../wasm/build/soundtouch.js'
 import { HeapArray } from './HeapArray'
-import { SoundStretchModule } from '../../web/SoundStretchModule'
+import { SoundTouchModule } from '../../web/SoundTouchModule'
 
 const RENDER_QUANTUM_FRAMES = 128
 
@@ -15,7 +15,7 @@ class BPMCounter {
   private init(channelCount: number) {
     this.inputArray?.close()
     createModule()
-      .then((module: SoundStretchModule) => {
+      .then((module: SoundTouchModule) => {
         this.kernel = new module.BPMDetect(channelCount, sampleRate)
         this.inputArray = new HeapArray(module, RENDER_QUANTUM_FRAMES, channelCount)
       })

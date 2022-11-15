@@ -74,7 +74,7 @@ export interface BPMDetect {
   getBeats(positionsPtr: number, strengthsPtr: number, length: number): number
 }
 
-export interface SoundStretchModule extends EmscriptenModule {
+export interface SoundTouchModule extends EmscriptenModule {
   BPMDetect: BPMDetect
   SoundTouch: SoundTouch
   SoundStretch: SoundStretch

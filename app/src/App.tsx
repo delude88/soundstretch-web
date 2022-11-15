@@ -8,6 +8,7 @@ import { useTest } from './useTest'
 function App() {
   const audioContext = useMemo(() => new AudioContext(), [])
   const {
+    ready,
     playing,
     pitch,
     tempo,
@@ -49,15 +50,19 @@ function App() {
           {Math.round(pitch)} semitones
         </label>
         <p>
-          <button className='playbackButton' onClick={handlePlaybackButton}>
-            {playing ? <IoStopOutline /> : <IoPlayOutline />}
+          {ready && (
+            <button className='playbackButton' onClick={handlePlaybackButton}>
+              {playing ? <IoStopOutline /> : <IoPlayOutline />}
+            </button>
+          )}
+        </p>
+        <p>
+          <button onClick={runTest}>
+            <h1>
+              Run test
+            </h1>
           </button>
         </p>
-        <button onClick={runTest}>
-          <h1>
-            RUN TEST
-          </h1>
-        </button>
       </header>
     </div>
   )

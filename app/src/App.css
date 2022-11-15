@@ -47,4 +47,8 @@
     border-radius: 50%;
     align-content: center;
     justify-content: center;
+    border: none;
+}
+.playbackButton:hover {
+    background-color: #61fbf6;
 }
