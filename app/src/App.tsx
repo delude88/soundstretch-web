@@ -1,20 +1,22 @@
 import React, { useCallback, useMemo } from 'react'
 import logo from './logo.svg'
 import './App.css'
-import { usePlayer } from './usePlayer'
+import { Method, usePlayer } from './usePlayer'
 import { IoPlayOutline, IoStopOutline } from 'react-icons/io5'
 import { useTest } from './useTest'
 
 function App() {
   const audioContext = useMemo(() => new AudioContext(), [])
   const {
+    method,
     ready,
     playing,
     pitch,
     tempo,
     setTempo,
     setPitch,
-    setPlaying
+    setPlaying,
+    setMethod
   } = usePlayer('song.mp3', audioContext)
   const runTest = useTest()
 
@@ -27,8 +29,15 @@ function App() {
     <div className='App'>
       <header className='App-header'>
         <img src={logo} className='App-logo' alt='logo' />
-        <h3>Tempo</h3>
         <label>
+          <h3>Method</h3>
+          <select value={method} onChange={(e) => setMethod(e.currentTarget.value as Method)}>
+            <option value='original'>Original</option>
+            <option value='realtime'>Rubberband</option>
+          </select>
+        </label>
+        <label>
+          <h3>Tempo</h3>
           <input type='range'
                  onChange={(e) => setTempo(parseFloat(e.currentTarget.value))}
                  value={tempo}
@@ -38,14 +47,14 @@ function App() {
           />
           {Math.round(tempo * 100)}%
         </label>
-        <h3>Pitch</h3>
         <label>
+          <h3>Pitch</h3>
           <input type='range'
-                 onChange={(e) => setPitch(parseFloat(e.currentTarget.value))}
+                 onChange={(e) => setPitch(parseInt(e.currentTarget.value))}
                  value={pitch}
                  min={-12}
                  max={12}
-                 step={0.05}
+                 step={1}
           />
           {Math.round(pitch)} semitones
         </label>

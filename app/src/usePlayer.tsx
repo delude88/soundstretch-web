@@ -1,14 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 // @ts-ignore
 import * as createModule from 'soundstretch-web/wasm/rubberband'
-import { SoundTouchModule } from 'soundstretch-web'
+import { RubberBandModule, createRubberBandRealtimeNode } from 'soundstretch-web'
 import debounce from 'lodash/debounce'
-import {
-  createRubberBandSourceNode,
-  createRubberBandRealtimeNode,
-  RubberBandSourceNode,
-  RubberBandRealtimeNode
-} from 'soundstretch-web'
 
 const DEBOUNCE_DELAY = 500
 
@@ -17,14 +11,16 @@ interface PlaybackSettings {
   timeRatio: number
 }
 
+export type Method = 'original' | 'offline' | 'realtime' | 'soundtouch'
+
 const usePlayer = (url: string, audioContext: AudioContext) => {
-  const [method, setMethod] = useState<'offline' | 'realtime' | 'soundtouch'>('realtime')
+  const [method, setMethod] = useState<Method>('original')
   const [pitch, setPitch] = useState<number>(0)
   const [tempo, setTempo] = useState<number>(1)
   const [playing, setPlaying] = useState<boolean>(false)
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer>()
-  const [sourceNode, setSourceNode] = useState<RubberBandSourceNode | RubberBandRealtimeNode>()
-  const [module, setModule] = useState<SoundTouchModule>()
+  const [sourceNode, setSourceNode] = useState<AudioBufferSourceNode>()
+  const [module, setModule] = useState<RubberBandModule>()
   const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings>({
     pitch: 1,
     timeRatio: 1
@@ -33,34 +29,36 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
   const ready = useMemo<boolean>(() => !!audioBuffer, [audioBuffer])
 
   useEffect(() => {
-    createModule().then((m: SoundTouchModule) => setModule(m))
+    createModule().then((m: RubberBandModule) => setModule(m))
   }, [])
 
   useEffect(() => {
     debouncePlaybackSettings({
-      pitch: pitch ? Math.pow(2.0, pitch / 12.0) : 1,
-      timeRatio: (100 / tempo) / 100
+      pitch: pitch,
+      timeRatio: tempo
     })
   }, [pitch, tempo, debouncePlaybackSettings])
 
   useEffect(() => {
     // CREATE AUDIO SOURCE NODE
     if (module && audioBuffer) {
-      let audioBufferSourceNode: RubberBandSourceNode | RubberBandRealtimeNode
+      let audioBufferSourceNode: AudioBufferSourceNode | undefined
       (async () => {
-        audioBufferSourceNode = method === 'realtime'
-          ? await createRubberBandRealtimeNode(audioContext, './rubberband-realtime-processor.js')
-          : await createRubberBandSourceNode(audioContext, './rubberband-source-processor.js')
-        audioBufferSourceNode.connect(audioContext.destination)
-        audioBufferSourceNode.setBuffer(audioBuffer)
-        console.log('Started')
-        setSourceNode(audioBufferSourceNode)
+        if (method === 'original') {
+          audioBufferSourceNode = new AudioBufferSourceNode(audioContext)
+          audioBufferSourceNode.loopStart = 20
+          audioBufferSourceNode.loopEnd = 25
+        } else if (method === 'realtime') {
+          audioBufferSourceNode = await createRubberBandRealtimeNode(audioContext, './rubberband-realtime-processor.js')
+        }
+        if (audioBufferSourceNode) {
+          audioBufferSourceNode.connect(audioContext.destination)
+          audioBufferSourceNode.buffer = audioBuffer
+          setSourceNode(audioBufferSourceNode)
+        }
       })()
       return () => {
         if (audioBufferSourceNode) {
-          audioBufferSourceNode.stop()
-          audioBufferSourceNode.close()
-          console.log('Stopped')
           setSourceNode(undefined)
         }
       }
@@ -81,13 +79,13 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
 
   useEffect(() => {
     if (sourceNode) {
-      sourceNode.setTempo(playbackSettings.timeRatio)
+      sourceNode.playbackRate.setValueAtTime(playbackSettings.timeRatio, 0)
     }
   }, [sourceNode, playbackSettings.timeRatio])
 
   useEffect(() => {
     if (sourceNode) {
-      sourceNode.setPitch(playbackSettings.pitch)
+      sourceNode.detune.setValueAtTime(playbackSettings.pitch * 100, 0)
     }
   }, [sourceNode, playbackSettings.pitch])
 
@@ -101,7 +99,6 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
         .then(audioBuffer => setAudioBuffer(audioBuffer))
     }
   }, [audioContext, url])
-
 
   return {
     ready,
