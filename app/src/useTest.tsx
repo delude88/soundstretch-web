@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 // @ts-ignore
 import * as createModule from 'soundstretch-web/wasm/soundtouch'
-import { SoundStretchModule } from 'soundstretch-web'
-import { Float32ChannelTransport } from './Float32ChannelTransport'
+import { Float32ChannelTransport, SoundStretchModule } from 'soundstretch-web'
 
 const useTest = () => {
   const [module, setModule] = useState<SoundStretchModule>()
@@ -18,13 +17,13 @@ const useTest = () => {
       const channelCount = 2
       const factor = 0.2
       const inputArrays: Float32Array[] = [new Float32Array(sampleSize), new Float32Array(sampleSize)]
-      let sum1 = 0
-      let sum2 = 0
+      //let sum1 = 0
+      //let sum2 = 0
       for (let i = 0; i < sampleSize; i++) {
         inputArrays[0][i] = 1 + i * 0.1
         inputArrays[1][i] = 2 + i * 1.1
-        sum1 += inputArrays[0][i]
-        sum2 += inputArrays[1][i]
+        //sum1 += inputArrays[0][i]
+        //sum2 += inputArrays[1][i]
       }
       const input = new Float32ChannelTransport(module, sampleSize, channelCount)
       const output = new Float32ChannelTransport(module, sampleSize, channelCount)

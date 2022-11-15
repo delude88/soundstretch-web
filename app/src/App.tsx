@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo } from 'react'
 import logo from './logo.svg'
 import './App.css'
-import { runTest } from './util'
 import { usePlayer } from './usePlayer'
 import { IoPlayOutline, IoStopOutline } from 'react-icons/io5'
 import { useTest } from './useTest'
@@ -14,19 +13,14 @@ function App() {
     tempo,
     setTempo,
     setPitch,
-    setPlaying,
+    setPlaying
   } = usePlayer('song.mp3', audioContext)
-  const otherTest = useTest()
+  const runTest = useTest()
 
   const handlePlaybackButton = useCallback(() => {
     audioContext.resume()
       .then(() => setPlaying(prev => !prev))
   }, [setPlaying, audioContext])
-
-  const run = useCallback(() => {
-    audioContext.resume()
-      .then(() => runTest(audioContext))
-  }, [audioContext])
 
   return (
     <div className='App'>
@@ -59,14 +53,9 @@ function App() {
             {playing ? <IoStopOutline /> : <IoPlayOutline />}
           </a>
         </p>
-        <button onClick={run}>
+        <button onClick={runTest}>
           <h1>
             RUN TEST
-          </h1>
-        </button>
-        <button onClick={otherTest}>
-          <h1>
-            RUN OTHER TEST
           </h1>
         </button>
       </header>

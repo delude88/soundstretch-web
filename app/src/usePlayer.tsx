@@ -40,7 +40,7 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
       pitch: pitch ? Math.pow(2.0, pitch / 12.0) : 1,
       timeRatio: (100 / tempo) / 100
     })
-  }, [pitch, tempo])
+  }, [pitch, tempo, debouncePlaybackSettings])
 
   useEffect(() => {
     // CREATE AUDIO SOURCE NODE
@@ -64,7 +64,7 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
         }
       }
     }
-  }, [module, audioBuffer, playing, audioContext])
+  }, [module, audioBuffer, playing, audioContext, method])
 
   useEffect(() => {
     if (sourceNode) {
@@ -80,25 +80,25 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
 
   useEffect(() => {
     if (sourceNode) {
-      console.log('timeRatio', playbackSettings.timeRatio)
       sourceNode.setTempo(playbackSettings.timeRatio)
     }
   }, [sourceNode, playbackSettings.timeRatio])
 
   useEffect(() => {
     if (sourceNode) {
-      console.log('pitch', playbackSettings.timeRatio)
       sourceNode.setPitch(playbackSettings.pitch)
     }
   }, [sourceNode, playbackSettings.pitch])
 
   useEffect(() => {
     // Load file
-    fetch(url)
-      .then(result => result.arrayBuffer())
-      .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
-      .then(audioBuffer => setAudioBuffer(audioBuffer))
-  }, [])
+    if(audioContext) {
+      fetch(url)
+        .then(result => result.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => setAudioBuffer(audioBuffer))
+    }
+  }, [audioContext, url])
 
 
   return {
