@@ -11,7 +11,7 @@
 
 // USE_QUEUE = [12001.] Average push time: 2.9186851211072664 Average pull time: 0.002585272287548995
 // DISABLED  = [12001.] Average push time: 2.887927304197317 Average pull time: 0.0040877617418870445
-#define USE_QUEUE
+//#define USE_QUEUE
 
 class RealtimeRubberBand {
  public:
