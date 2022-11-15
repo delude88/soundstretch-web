@@ -49,9 +49,9 @@ function App() {
           {Math.round(pitch)} semitones
         </label>
         <p>
-          <a className='playbackButton' onClick={handlePlaybackButton}>
+          <button className='playbackButton' onClick={handlePlaybackButton}>
             {playing ? <IoStopOutline /> : <IoPlayOutline />}
-          </a>
+          </button>
         </p>
         <button onClick={runTest}>
           <h1>
