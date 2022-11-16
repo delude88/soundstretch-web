@@ -1,7 +1,7 @@
 
 #include <iostream>
 #include "SoundStretch.h"
-#include "EmbindSoundTouch.h"
+#include "SoundTouch.h"
 
 int main(const int nParams, const char *const paramStr[]) {
     auto buffer_size = 128;

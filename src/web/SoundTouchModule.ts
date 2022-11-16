@@ -45,13 +45,17 @@ export interface SoundStretch {
 
   setPitch(pitch: number): void
 
+  setPitchSemiTones(semitones: number): void
+
   setTempo(tempo: number): void
+
+  setRate(rate: number): void
 
   push(ptr: number, length: number): void
 
-  pull(ptr: number, length: number): void
+  available(): number
 
-  //getSamplesAvailable(): number
+  pull(ptr: number, length: number): number
 }
 
 export interface Test {
@@ -76,7 +80,7 @@ export interface BPMDetect {
 
 export interface SoundTouchModule extends EmscriptenModule {
   BPMDetect: BPMDetect
-  SoundTouch: SoundTouch
+  //SoundTouch: SoundTouch
   SoundStretch: SoundStretch
   Test: Test
 }

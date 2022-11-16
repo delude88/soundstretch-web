@@ -23,8 +23,6 @@ add_library(ChannelTransport
 add_library(soundtouchclasses
         src/SoundStretch.cpp
         src/SoundStretch.h
-        src/EmbindSoundTouch.cpp
-        src/EmbindSoundTouch.h
         )
 target_include_directories(soundtouchclasses
         PUBLIC
