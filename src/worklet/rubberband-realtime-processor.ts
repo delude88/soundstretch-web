@@ -10,6 +10,7 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
   private inputBuffer?: Float32ChannelTransport
   private outputBuffer?: Float32ChannelTransport
   private settings: {
+    preserve?: boolean
     sampleRate: number
     pitchScale: number
     timeRatio: number
@@ -87,6 +88,12 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
             this.api?.setPitchScale(this.settings.pitchScale)
             break
           }
+          case 'preserve': {
+            if (data.preserve === undefined) throw new Error('Missing preserve key')
+            this.settings.preserve = data.preserve
+            this.api?.preserveFormantShave(!!this.settings.preserve)
+            break
+          }
           case 'tempo': {
             if (data.tempo === undefined) throw new Error('Missing tempo key')
             const value = parseFloat(data.tempo)
@@ -123,6 +130,7 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
       )
       this.api.setPitchScale(this.settings.pitchScale)
       this.api.setTimeRatio(this.settings.timeRatio)
+      this.api.preserveFormantShave(!!this.settings.preserve)
 
       // Push start pad
       this.preferredStartPad = this.api.getPreferredStartPad()

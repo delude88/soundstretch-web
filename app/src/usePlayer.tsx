@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 // @ts-ignore
 import * as createModule from 'soundstretch-web/wasm/rubberband'
-import { RubberBandModule, createRubberBandRealtimeNode, createSoundStretchNode } from 'soundstretch-web'
+import { RubberBandModule, createRubberBandRealtimeNode, createSoundStretchNode, RubberBandRealtimeNode } from 'soundstretch-web'
 import debounce from 'lodash/debounce'
 
 const DEBOUNCE_DELAY = 500
@@ -17,6 +17,7 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
   const [method, setMethod] = useState<Method>('soundtouch')
   const [pitch, setPitch] = useState<number>(0)
   const [tempo, setTempo] = useState<number>(1)
+  const [preserved, setPreserved] = useState<boolean>(false)
   const [playing, setPlaying] = useState<boolean>(false)
   const [sourceNode, setSourceNode] = useState<AudioBufferSourceNode>()
   const [module, setModule] = useState<RubberBandModule>()
@@ -92,10 +93,21 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
     }
   }, [sourceNode, playbackSettings.pitch])
 
+  useEffect(() => {
+    if (sourceNode && method === "realtime") {
+      if((sourceNode as any).preserveFormantShave) {
+        const func = (sourceNode as RubberBandRealtimeNode).preserveFormantShave
+        func(preserved)
+      }
+    }
+  }, [sourceNode, method, preserved])
+
   return {
     ready,
     method,
     setMethod,
+    preserved,
+    setPreserved,
     playing,
     pitch,
     tempo,

@@ -10,10 +10,12 @@ function App() {
   const audioContext = useMemo(() => new AudioContext(), [])
   const { audioBuffer, handleFileInputChange } = useAudioFileChooser(audioContext, `${process.env.PUBLIC_URL}/song.mp3`)
   const {
+    preserved,
     method,
     playing,
     pitch,
     tempo,
+    setPreserved,
     setTempo,
     setPitch,
     setPlaying,
@@ -42,6 +44,15 @@ function App() {
             <option value='soundtouch'>Soundtouch</option>
           </select>
         </label>
+        {method === 'realtime' && (
+          <p className='micro'>
+            <label>
+              <input type='checkbox' checked={preserved} onChange={(e) => setPreserved(e.currentTarget.checked)} />
+              Preserve the spectral envelope of the unshifted signal. This permits shifting the note frequency without
+              so substantially affecting the perceived pitch profile of the voice or instrument.
+            </label>
+          </p>
+        )}
         <label>
           <h3>Tempo</h3>
           <input type='range'

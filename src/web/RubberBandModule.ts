@@ -33,6 +33,8 @@ export interface RealtimeRubberBand {
 
   setPitchScale(scale: number): void
 
+  preserveFormantShave(enabled: boolean): void
+
   available(): number
 
   push(ptr: number, numSamples: number): void

@@ -52,3 +52,7 @@
 .playbackButton:hover {
     background-color: #61fbf6;
 }
+
+.micro {
+    font-size: small;
+}

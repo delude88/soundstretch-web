@@ -14,49 +14,51 @@
 //#define USE_QUEUE
 
 class RealtimeRubberBand {
- public:
-  explicit RealtimeRubberBand(size_t sample_rate, size_t channel_count = 1, size_t buffer_size = 128);
+public:
+    explicit RealtimeRubberBand(size_t sample_rate, size_t channel_count = 1, size_t buffer_size = 128);
 
-  ~RealtimeRubberBand();
+    ~RealtimeRubberBand();
 
-  [[nodiscard]] size_t getChannelCount() const;
+    [[nodiscard]] size_t getChannelCount() const;
 
-  [[nodiscard]] size_t getSamplesRequired() const;
+    [[nodiscard]] size_t getSamplesRequired() const;
 
-  [[nodiscard]] size_t getPreferredStartPad() const;
+    [[nodiscard]] size_t getPreferredStartPad() const;
 
-  [[nodiscard]] size_t getStartDelay() const;
+    [[nodiscard]] size_t getStartDelay() const;
 
-  [[nodiscard]] double getTimeRatio() const;
+    [[nodiscard]] double getTimeRatio() const;
 
-  [[nodiscard]] double getPitchScale() const;
+    [[nodiscard]] double getPitchScale() const;
 
-  size_t available();
+    void preserveFormantShave(bool enabled);
 
-  void setPitchScale(double pitch_scale);
+    size_t available();
 
-  void setTimeRatio(double time_ratio);
+    void setPitchScale(double pitch_scale);
 
-  void push(uintptr_t input_ptr, size_t input_size);
+    void setTimeRatio(double time_ratio);
 
-  size_t pull(uintptr_t output_ptr, size_t output_size);
+    void push(uintptr_t input_ptr, size_t input_size);
 
- private:
-  void buffer();
+    size_t pull(uintptr_t output_ptr, size_t output_size);
+
+private:
+    void buffer();
 
 #if defined(USE_QUEUE)
-  std::queue<float> **_queue;
-  size_t _buffer_size;
+    std::queue<float> **_queue;
+    size_t _buffer_size;
 #else
-  RubberBand::RingBuffer<float> **_buffer;
+    RubberBand::RingBuffer<float> **_buffer;
 #endif
 
-  float **_scratch;
+    float **_scratch;
 
-  RubberBand::RubberBandStretcher *_stretcher;
+    RubberBand::RubberBandStretcher *_stretcher;
 
-  static const size_t _kBlockSize = 1024;
-  static const size_t _kReserve = 8192;
+    static const size_t _kBlockSize = 1024;
+    static const size_t _kReserve = 8192;
 };
 
 #endif //WASM_REALTIMERUBBERBAND_H

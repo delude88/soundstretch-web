@@ -60,6 +60,9 @@ EMSCRIPTEN_BINDINGS(CLASS_RealtimeRubberBand) {
                 .function("setPitchScale",
                           &RealtimeRubberBand::setPitchScale)
 
+                .function("preserveFormantShave",
+                          &RealtimeRubberBand::preserveFormantShave)
+
                 .function("available",
                           &RealtimeRubberBand::available)
 
