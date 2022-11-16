@@ -4,7 +4,7 @@ import { Float32ChannelTransport } from '../web/Float32ChannelTransport'
 
 const RENDER_QUANTUM_FRAMES = 128
 const MAX_TEMPO = 10
-const PRE_BUFFER_FACTOR = 4
+const PRE_BUFFER_FACTOR = 32
 
 class SoundStretchProcessor extends AudioWorkletProcessor {
   private pitch: number = 1
@@ -37,7 +37,6 @@ class SoundStretchProcessor extends AudioWorkletProcessor {
     this.port.onmessage = ({ data }) => {
       if (typeof data === 'object' && data['event']) {
         const { event } = data
-        console.info(`[soundstretch-processor] Received event=${event}`)
         switch (event) {
           case 'buffer': {
             if (data.channels === undefined) throw new Error('Missing channels keys')
@@ -49,8 +48,8 @@ class SoundStretchProcessor extends AudioWorkletProcessor {
             this.channelCount = this.buffer.length
             this.bufferPosition = data.offset || 0
             this.bufferEndPosition = this.buffer.length > 0 ? this.buffer[0].length : 0
-            this.playPosition = this.bufferPosition * this.tempo * this.rate
-            this.playEndPosition = this.bufferEndPosition * this.tempo * this.rate
+            this.playPosition = Math.round(this.bufferPosition / (this.tempo * this.rate))
+            this.playEndPosition = Math.round(this.bufferEndPosition / (this.tempo * this.rate))
             this.reInit()
             break
           }
@@ -71,33 +70,26 @@ class SoundStretchProcessor extends AudioWorkletProcessor {
             this.pitch = value / 100
             console.log(`[soundstretch-processor] this.pitch = ${this.pitch}`)
             this.api?.setPitchSemiTones(this.pitch)
-            console.log(`BEFORE this.bufferPosition=${this.bufferPosition}/${this.bufferEndPosition} this.playPosition=${this.playPosition}/${this.playEndPosition}`)
-            this.bufferPosition = this.playPosition / (this.tempo * this.rate)
-            console.log(`AFTER this.bufferPosition=${this.bufferPosition}/${this.bufferEndPosition} this.playPosition=${this.playPosition}/${this.playEndPosition}`)
+            const currentBufferPosition = Math.round(this.playPosition * this.tempo * this.rate)
+            this.resetPlayback(currentBufferPosition)
             break
           }
           case 'rate': {
             if (data.rate === undefined) throw new Error('Missing rate key')
             if (data.rate <= 0) throw new Error(`Invalid rate key ${data.rate}`)
-            const correctedBufferPosition = this.playPosition / (this.tempo * this.rate)
+            const currentBufferPosition = Math.round(this.playPosition * this.tempo * this.rate)
             this.rate = data.rate
-            console.log(`[soundstretch-processor] this.rate = ${this.rate}`)
             this.api?.setRate(this.pitch)
-            this.bufferPosition = correctedBufferPosition
-            this.playPosition = this.bufferPosition * (this.tempo * this.rate)
-            this.playEndPosition = this.bufferEndPosition * (this.tempo * this.rate)
+            this.resetPlayback(currentBufferPosition)
             break
           }
           case 'tempo': {
             if (data.tempo === undefined) throw new Error('Missing tempo key')
             if (data.tempo <= 0) throw new Error(`Invalid tempo key ${data.tempo}`)
-            const correctedBufferPosition = this.playPosition / (this.tempo * this.rate)
+            const currentBufferPosition = Math.round(this.playPosition * this.tempo * this.rate)
             this.tempo = data.tempo
-            console.log(`[soundstretch-processor] this.tempo = ${this.tempo}`)
             this.api?.setTempo(this.tempo)
-            this.bufferPosition = correctedBufferPosition
-            this.playPosition = this.bufferPosition * (this.tempo * this.rate)
-            this.playEndPosition = this.bufferEndPosition * (this.tempo * this.rate)
+            this.resetPlayback(currentBufferPosition)
             break
           }
           case 'close': {
@@ -120,27 +112,50 @@ class SoundStretchProcessor extends AudioWorkletProcessor {
     return RENDER_QUANTUM_FRAMES
   }
 
+  printCurrentPlayMark(prefix?: string) {
+    const bufferPositionInSeconds = this.bufferPosition / this.sampleRate
+    const bufferTotalInSeconds = Math.round(this.bufferEndPosition / this.sampleRate)
+    const playPositionInSeconds = this.playPosition / this.sampleRate
+    const playTotalInSeconds = Math.round(this.playEndPosition / this.sampleRate)
+
+    const bufferPercentage = Math.round(this.bufferPosition / this.bufferEndPosition * 100)
+    const playPercentage = Math.round(this.playPosition / this.playEndPosition * 100)
+
+    console.log(`${prefix || ''} buffer@${bufferPositionInSeconds}/${bufferTotalInSeconds}s (${bufferPercentage}%) play@${playPositionInSeconds}/${playTotalInSeconds}s (${playPercentage}%)`)
+  }
+
+  resetPlayback(bufferPositon: number) {
+    this.printCurrentPlayMark('BEFORE')
+
+    this.bufferPosition = bufferPositon
+    this.playPosition = Math.round(this.bufferPosition / (this.tempo * this.rate))
+    this.playEndPosition = Math.round(this.bufferEndPosition / (this.tempo * this.rate))
+
+    this.printCurrentPlayMark('AFTER')
+
+    if (this.api && this.inputBuffer && this.buffer) {
+      const bufferSize = Math.min(this.buffer[0].length, Math.round(this.requiredSamples() * PRE_BUFFER_FACTOR))
+      if (bufferSize > 0) {
+        do {
+          this.inputBuffer.write(
+            this.buffer.map(channelBuffer => channelBuffer.subarray(this.bufferPosition))
+          )
+          this.api.push(this.inputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
+          this.bufferPosition += RENDER_QUANTUM_FRAMES
+        } while (this.bufferPosition < bufferSize)
+        console.log(`Pre-buffered ${bufferSize} samples`)
+      }
+    }
+
+  }
+
   reInit() {
     if (this.module && this.channelCount > 0) {
       console.log(`[soundstretch-processor] reInit sampleRate=${this.sampleRate} channelCount=${this.channelCount} globalSampleRate=${sampleRate}`)
       this.inputBuffer = new Float32ChannelTransport(this.module, RENDER_QUANTUM_FRAMES * MAX_TEMPO, this.channelCount)
       this.outputBuffer = new Float32ChannelTransport(this.module, RENDER_QUANTUM_FRAMES, this.channelCount)
       this.api = new this.module.SoundStretch(this.sampleRate, this.channelCount)
-      console.log(`${this.api.getChannelCount()} channels`)
-
-      if (this.buffer) {
-        const bufferSize = Math.min(this.buffer[0].length, this.requiredSamples() * PRE_BUFFER_FACTOR)
-        if (bufferSize > 0) {
-          do {
-            this.inputBuffer.write(
-              this.buffer.map(channelBuffer => channelBuffer.subarray(this.bufferPosition))
-            )
-            this.api.push(this.inputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
-            this.bufferPosition += RENDER_QUANTUM_FRAMES
-          } while (this.bufferPosition < bufferSize)
-          console.info(`Pre-buffered ${bufferSize} samples`)
-        }
-      }
+      this.resetPlayback(0)
     }
   }
 
