@@ -5,7 +5,6 @@ import { RubberBandModule, createRubberBandRealtimeNode, createSoundStretchNode 
 import debounce from 'lodash/debounce'
 
 const DEBOUNCE_DELAY = 500
-const USE_FETCH = true
 
 interface PlaybackSettings {
   pitch: number,

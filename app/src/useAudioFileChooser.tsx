@@ -42,7 +42,7 @@ const useAudioFileChooser = (audioContext: AudioContext, initialUrl?: string) =>
         setAudioBuffer(undefined)
       }
     }
-  }, [audioContext, fileBuffer])
+  }, [audioContext, fileBuffer, initialUrl])
 
   return {
     handleFileInputChange,
