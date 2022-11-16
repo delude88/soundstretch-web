@@ -1,3 +1,4 @@
+/*
 export interface SoundTouch {
   new(): SoundTouch
 
@@ -37,11 +38,14 @@ export interface SoundTouch {
 
   clear(): void
 }
+*/
 
 export interface SoundStretch {
   new(sampleRate: number, numChannels: number): SoundStretch
 
   getVersion(): number
+
+  getChannelCount(): number
 
   setPitch(pitch: number): void
 
@@ -52,6 +56,8 @@ export interface SoundStretch {
   setRate(rate: number): void
 
   push(ptr: number, length: number): void
+
+  flush(): void
 
   available(): number
 

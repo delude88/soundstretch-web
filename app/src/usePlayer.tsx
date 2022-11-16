@@ -1,24 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 // @ts-ignore
 import * as createModule from 'soundstretch-web/wasm/rubberband'
-import { RubberBandModule, createRubberBandRealtimeNode } from 'soundstretch-web'
+import { RubberBandModule, createRubberBandRealtimeNode, createSoundStretchNode } from 'soundstretch-web'
 import debounce from 'lodash/debounce'
 
 const DEBOUNCE_DELAY = 500
+const USE_FETCH = true
 
 interface PlaybackSettings {
   pitch: number,
   timeRatio: number
 }
 
-export type Method = 'original' | 'offline' | 'realtime' | 'soundtouch'
+export type Method = 'original' | 'realtime' | 'soundtouch'
 
-const usePlayer = (url: string, audioContext: AudioContext) => {
-  const [method, setMethod] = useState<Method>('original')
+const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
+  const [method, setMethod] = useState<Method>('soundtouch')
   const [pitch, setPitch] = useState<number>(0)
   const [tempo, setTempo] = useState<number>(1)
   const [playing, setPlaying] = useState<boolean>(false)
-  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer>()
   const [sourceNode, setSourceNode] = useState<AudioBufferSourceNode>()
   const [module, setModule] = useState<RubberBandModule>()
   const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings>({
@@ -48,8 +48,12 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
           audioBufferSourceNode = new AudioBufferSourceNode(audioContext)
           audioBufferSourceNode.loopStart = 20
           audioBufferSourceNode.loopEnd = 25
+          console.log(audioBufferSourceNode.detune)
+          console.log(audioBufferSourceNode.playbackRate)
         } else if (method === 'realtime') {
-          audioBufferSourceNode = await createRubberBandRealtimeNode(audioContext, './rubberband-realtime-processor.js')
+          audioBufferSourceNode = await createRubberBandRealtimeNode(audioContext, `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`)
+        } else if (method === 'soundtouch') {
+          audioBufferSourceNode = await createSoundStretchNode(audioContext, `${process.env.PUBLIC_URL}/soundstretch-processor.js`)
         }
         if (audioBufferSourceNode) {
           audioBufferSourceNode.connect(audioContext.destination)
@@ -88,17 +92,6 @@ const usePlayer = (url: string, audioContext: AudioContext) => {
       sourceNode.detune.setValueAtTime(playbackSettings.pitch * 100, 0)
     }
   }, [sourceNode, playbackSettings.pitch])
-
-  useEffect(() => {
-    // Load file
-    if (audioContext) {
-      console.info(`Loading ${url}`)
-      fetch(url)
-        .then(result => result.arrayBuffer())
-        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
-        .then(audioBuffer => setAudioBuffer(audioBuffer))
-    }
-  }, [audioContext, url])
 
   return {
     ready,

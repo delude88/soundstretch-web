@@ -36,6 +36,14 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
   private playPosition: number = 0
   private playEndPosition: number = 0
 
+  private quality: {
+    underruns: number,
+    runs: number,
+  } = {
+    underruns: 0,
+    runs: 0
+  }
+
   constructor() {
     super()
     this.port.onmessageerror = (err) => {
@@ -44,7 +52,6 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
     this.port.onmessage = ({ data }) => {
       if (typeof data === 'object' && data['event']) {
         const { event } = data
-        console.info(`[rubberband-realtime-processor] Received event=${event}`)
         switch (event) {
           case 'buffer': {
             if (data.channels === undefined) throw new Error('Missing channels keys')
@@ -65,29 +72,27 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
             break
           }
           case 'start': {
-            console.log("[rubberband-realtime-processor] this.playing = true")
             this.playing = true
             break
           }
           case 'stop': {
-            console.log("[rubberband-realtime-processor] this.playing = false")
             this.playing = false
             break
           }
           case 'pitch': {
             if (data.pitch === undefined) throw new Error('Missing pitch key')
-            if (data.pitch <= 0) throw new Error(`Invalid pitch key ${data.pitch}`)
-            this.settings.pitchScale = data.pitch || 1
-            console.log(`[rubberband-realtime-processor] pitch = ${this.settings.pitchScale}`)
+            const value = parseFloat(data.pitch)
+            if (value === Number.NaN) throw new Error(`Invalid pitch key ${data.pitch}`)
+            this.settings.pitchScale = Math.pow(2.0, value / 1200.0) || 1
             this.api?.setPitchScale(this.settings.pitchScale)
             break
           }
           case 'tempo': {
             if (data.tempo === undefined) throw new Error('Missing tempo key')
-            if (data.tempo <= 0) throw new Error(`Invalid tempo key ${data.tempo}`)
-            this.settings.timeRatio = data.tempo || 1
+            const value = parseFloat(data.tempo)
+            if (value === Number.NaN) throw new Error(`Invalid tempo key ${data.tempo}`)
+            this.settings.timeRatio = ((100 / value) / 100) || 1
             this.playEndPosition = this.bufferEndPosition * this.settings.timeRatio
-            console.log(`[rubberband-realtime-processor] timeRatio = ${this.settings.timeRatio}`)
             this.api?.setTimeRatio(this.settings.timeRatio)
             break
           }
@@ -141,7 +146,6 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
           startPad[c] = new Float32Array(this.preferredStartPad)
         }
         this.inputBuffer.write(startPad)
-        console.log(`Feeding ${this.preferredStartPad} start pad samples`)
         this.api.push(this.inputBuffer.getPointer(), this.preferredStartPad)
         this.preferredStartPad = 0
       }
@@ -180,6 +184,8 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
               const actual = this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
               this.outputBuffer.read(outputs[0])
               this.playPosition += actual
+            } else {
+              this.quality.underruns++
             }
           }
         } else {
@@ -187,6 +193,10 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
           this.port.postMessage({ event: 'ended' })
         }
         this.feedBuffer()
+
+        if (this.quality.runs++ % 2048 === 0) {
+          console.log(`[rubberband-realtime-processor] Underrun ratio: ${this.quality.underruns}/${this.quality.runs}, ${this.bufferPosition} samples written, ${this.playPosition} samples read, currently ${this.api?.available() || 0} samples available`)
+        }
       }
     } else {
       // Live chain (no buffer given)
@@ -217,7 +227,6 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
   }
 
   close() {
-    console.log(`[rubberband-realtime-processor] close()`)
     this.inputBuffer?.close()
     this.outputBuffer?.close()
     this.inputBuffer = undefined

@@ -16,6 +16,9 @@ EMSCRIPTEN_BINDINGS(CLASS_SoundStretch) {
 
                 .class_function("getVersion", &SoundStretch::getVersion)
 
+                .function("getChannelCount",
+                          &SoundStretch::getChannelCount)
+
                 .function("setPitch",
                           &SoundStretch::setPitch)
 
@@ -34,6 +37,9 @@ EMSCRIPTEN_BINDINGS(CLASS_SoundStretch) {
                 .function("pull",
                           &SoundStretch::pull,
                           allow_raw_pointers())
+
+                .function("flush",
+                          &SoundStretch::flush)
 
                 .function("push",
                           &SoundStretch::push,

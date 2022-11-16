@@ -4,12 +4,13 @@ import './App.css'
 import { Method, usePlayer } from './usePlayer'
 import { IoPlayOutline, IoStopOutline } from 'react-icons/io5'
 import { useTest } from './useTest'
+import { useAudioFileChooser } from './useAudioFileChooser'
 
 function App() {
   const audioContext = useMemo(() => new AudioContext(), [])
+  const { audioBuffer, handleFileInputChange } = useAudioFileChooser(audioContext, `${process.env.PUBLIC_URL}/song.mp3`)
   const {
     method,
-    ready,
     playing,
     pitch,
     tempo,
@@ -17,7 +18,8 @@ function App() {
     setPitch,
     setPlaying,
     setMethod
-  } = usePlayer('song.mp3', audioContext)
+  } = usePlayer(audioContext, audioBuffer)
+
   const runTest = useTest()
 
   const handlePlaybackButton = useCallback(() => {
@@ -30,10 +32,14 @@ function App() {
       <header className='App-header'>
         <img src={logo} className='App-logo' alt='logo' />
         <label>
+          <input type='file' accept='audio/*' multiple={false} onChange={handleFileInputChange} />
+        </label>
+        <label>
           <h3>Method</h3>
           <select value={method} onChange={(e) => setMethod(e.currentTarget.value as Method)}>
             <option value='original'>Original</option>
             <option value='realtime'>Rubberband</option>
+            <option value='soundtouch'>Soundtouch</option>
           </select>
         </label>
         <label>
@@ -59,11 +65,9 @@ function App() {
           {Math.round(pitch)} semitones
         </label>
         <p>
-          {ready && (
-            <button className='playbackButton' onClick={handlePlaybackButton}>
-              {playing ? <IoStopOutline /> : <IoPlayOutline />}
-            </button>
-          )}
+          <button className='playbackButton' onClick={handlePlaybackButton}>
+            {playing ? <IoStopOutline /> : <IoPlayOutline />}
+          </button>
         </p>
         <p>
           <button onClick={runTest}>
