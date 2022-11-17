@@ -5,6 +5,10 @@ import { Method, usePlayer } from './usePlayer'
 import { IoPlayOutline, IoStopOutline } from 'react-icons/io5'
 import { useTest } from './useTest'
 import { useAudioFileChooser } from './useAudioFileChooser'
+import Wavesurfer from './Wavesurfer'
+import ReactWaveDraw from './wavedraw/ReactWaveDraw'
+
+const USE_WAVESURFER = false
 
 function App() {
   const audioContext = useMemo(() => new AudioContext(), [])
@@ -33,6 +37,8 @@ function App() {
     <div className='App'>
       <header className='App-header'>
         <img src={logo} className='App-logo' alt='logo' />
+        <ReactWaveDraw audioContext={audioContext} audioBuffer={audioBuffer} />
+        {USE_WAVESURFER && <Wavesurfer audioContext={audioContext} />}
         <label>
           <input type='file' accept='audio/*' multiple={false} onChange={handleFileInputChange} />
         </label>
