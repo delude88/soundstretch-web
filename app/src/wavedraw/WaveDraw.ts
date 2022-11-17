@@ -39,12 +39,19 @@ const reduceAudioPeak = (data: Float32Array, spp: number, scroll: number, width:
 class WaveDraw {
   private readonly _context: BaseAudioContext
   private readonly _container: HTMLElement
-  private readonly _canvasWrapper: HTMLDivElement
-  private readonly _trackCanvas: HTMLCanvasElement
+  private readonly _innerContainer: HTMLDivElement
+  private readonly _playCanvasWrapper: HTMLDivElement
   private readonly _playCanvas: HTMLCanvasElement
+  private readonly _trackCanvas: HTMLCanvasElement
+  private readonly _clickArea: HTMLDivElement
+  private readonly _resizeObserver: ResizeObserver
   private _sourceNode?: AudioBufferSourceNode
-  private _playColor: string = 'black'
-  private _trackColor: string = 'black'
+  private _playColor: string = 'purple'
+  private _trackColor: string = 'violet'
+  private _width: number
+  private _buffer?: AudioBuffer | null
+
+  private _playMark: number = 0
 
   constructor({
                 container,
@@ -54,16 +61,53 @@ class WaveDraw {
     this._container = container
     this._context = audioContext
 
-    this._canvasWrapper = document.createElement('div')
-    this._trackCanvas = document.createElement('canvas')
+    this._innerContainer = document.createElement('div')
+    this._playCanvasWrapper = document.createElement('div')
     this._playCanvas = document.createElement('canvas')
+    this._trackCanvas = document.createElement('canvas')
+    this._clickArea = document.createElement('div')
 
-    this._canvasWrapper.style.cssText += `display:block;position:relative;width:100%;height:${height}px;`
-    this._trackCanvas.style.cssText += 'position:absolute;top:0;left:0;width:100%;max-height: 100%;'
-    this._playCanvas.style.cssText += 'position:absolute;top:0;left:0;width:100%;max-height: 100%;'
-    this._canvasWrapper.appendChild(this._trackCanvas)
-    this._canvasWrapper.appendChild(this._playCanvas)
-    this._container.appendChild(this._canvasWrapper)
+    this._innerContainer.style.cssText += `display:block;position:relative;width:100%;${height ? `height:${height}px;` : ''}`
+    this._trackCanvas.style.cssText += 'position:absolute;top:0;left:0;height: 100%;'
+    this._playCanvasWrapper.style.cssText += 'position:absolute;top:0;left:0;width:100%;height: 100%;overflow: hidden;'
+    this._playCanvas.style.cssText += 'position:absolute;top:0;left:0;height: 100%;'
+    this._clickArea.style.cssText += 'position:absolute;top:0;left:0;width:100%;height: 100%;'
+    this._playCanvasWrapper.appendChild(this._playCanvas)
+    this._innerContainer.appendChild(this._trackCanvas)
+    this._innerContainer.appendChild(this._playCanvasWrapper)
+    this._innerContainer.appendChild(this._clickArea)
+    this._container.appendChild(this._innerContainer)
+
+    this._clickArea.onclick = (ev) => {
+      const x = ev.x - this._innerContainer.getBoundingClientRect().x
+      this.seekTo(Math.round(this.length / this.width * x))
+    }
+    this._resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentBoxSize) {
+          //const contentBoxSize = Array.isArray(entry.contentBoxSize) ? entry.contentBoxSize[0] : entry.contentBoxSize
+          this.width = entry.contentRect.width
+        }
+      }
+    })
+    this._resizeObserver.observe(this._container)
+    this._width = container.getBoundingClientRect().width
+  }
+
+  public get length() {
+    return this._sourceNode?.buffer?.length || 0
+  }
+
+  public get width() {
+    return this._width
+  }
+
+  private set width(width: number) {
+    this._width = width
+    this._trackCanvas.style.width = `${width}px`
+    this._playCanvas.style.width = `${width}px`
+    this.seekTo(this._playMark)
+    this.init()
   }
 
   play() {
@@ -74,7 +118,15 @@ class WaveDraw {
     this._sourceNode?.stop()
   }
 
+  seekTo(sample: number) {
+    if (this._sourceNode?.buffer) {
+      this._playMark = sample
+      this._playCanvasWrapper.style.width = `${this.width / this.length * this._playMark}px`
+    }
+  }
+
   setBuffer(audioBuffer: AudioBuffer) {
+    this._buffer = audioBuffer
     const sourceNode = new AudioBufferSourceNode(this._context)
     sourceNode.buffer = audioBuffer
     this.setSourceNode(sourceNode)
@@ -82,6 +134,7 @@ class WaveDraw {
 
   setSourceNode(sourceNode: AudioBufferSourceNode) {
     this._sourceNode = sourceNode
+    this._buffer = this._sourceNode.buffer
     this.init()
   }
 
@@ -121,12 +174,12 @@ class WaveDraw {
 
   destroy() {
     console.log('[WaveDraw] destroy')
-    this._canvasWrapper.removeChild(this._trackCanvas)
-    this._canvasWrapper.removeChild(this._playCanvas)
-    this._container.removeChild(this._canvasWrapper)
+    this._resizeObserver.disconnect()
     this._trackCanvas.remove()
     this._playCanvas.remove()
-    this._canvasWrapper.remove()
+    this._playCanvasWrapper.remove()
+    this._clickArea.remove()
+    this._innerContainer.remove()
   }
 }
 

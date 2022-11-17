@@ -8,7 +8,7 @@ import { useAudioFileChooser } from './useAudioFileChooser'
 import Wavesurfer from './Wavesurfer'
 import ReactWaveDraw from './wavedraw/ReactWaveDraw'
 
-const USE_WAVESURFER = false
+const USE_WAVESURFER = true
 
 function App() {
   const audioContext = useMemo(() => new AudioContext(), [])
