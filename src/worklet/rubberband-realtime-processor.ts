@@ -15,8 +15,8 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
     pitchScale: number
     timeRatio: number
     loop: boolean,
-    loopStart?: number,
-    loopEnd?: number,
+    loopStart: number,
+    loopEnd: number,
     offset: number,
     duration?: number,
   } = {
@@ -24,6 +24,8 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
     pitchScale: 1,
     timeRatio: 1,
     loop: false,
+    loopStart: 0,
+    loopEnd: Number.MAX_SAFE_INTEGER,
     offset: 0
   }
   private buffer?: Float32Array[]
@@ -55,7 +57,7 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
         const { event } = data
         switch (event) {
           case 'buffer': {
-            if (data.channels === undefined) throw new Error('Missing channels keys')
+            if (data.channels === undefined) throw new Error('Missing channels key')
             if (data.channels <= 0) throw new Error(`Invalid channels key ${data.channels}`)
             if (data.sampleRate === undefined) throw new Error('Missing sampleRate key')
             if (data.sampleRate <= 0) throw new Error(`Invalid sampleRate key ${data.sampleRate}`)
@@ -63,6 +65,12 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
             this.buffer = (data.channels as ArrayBuffer[]).map(buf => new Float32Array(buf))
             this.channelCount = this.buffer.length
             this.settings.loop = data.loop
+            if (this.settings.loopStart) {
+              this.settings.loopStart = data.loopStart * this.settings.sampleRate // seconds to samples
+            }
+            if (this.settings.loopEnd) {
+              this.settings.loopEnd = data.loopEnd * this.settings.sampleRate // seconds to samples
+            }
             this.settings.duration = data.duration
             this.settings.offset = data.offset || 0
             this.bufferPosition = this.settings.offset
@@ -78,6 +86,21 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
           }
           case 'stop': {
             this.playing = false
+            break
+          }
+          case 'loop': {
+            if (data.loop === undefined) throw new Error('Missing loop key')
+            this.settings.loop = data.loop
+            break
+          }
+          case 'loopStart': {
+            if (data.loopStart === undefined) throw new Error('Missing loopStart key')
+            this.settings.loopStart = data.loopStart * this.settings.sampleRate
+            break
+          }
+          case 'loopEnd': {
+            if (data.loopEnd === undefined) throw new Error('Missing loopEnd key')
+            this.settings.loopEnd = data.loopEnd * this.settings.sampleRate
             break
           }
           case 'pitch': {
@@ -176,6 +199,14 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
       // Buffered chain
       if (this.playing) {
         if (this.playPosition < this.playEndPosition) {
+          // Loop?
+          if (this.settings.loop) {
+            if (this.playPosition >= this.settings.loopEnd) {
+              // Go back to loopStart
+              this.playPosition = this.settings.loopStart
+            }
+          }
+
           if (this.api && this.outputBuffer && this.startDelay > 0) {
             // Apply start delay
             const available = this.api.available()

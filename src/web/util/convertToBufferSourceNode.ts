@@ -209,6 +209,10 @@ const convertToBufferSourceNode = (workletNode: AudioWorkletNode): AudioBufferSo
     },
     set(loop: boolean) {
       _loop = loop
+      workletNode.port.postMessage({
+        event: 'loop',
+        loop: _loop
+      })
     }
   })
   Object.defineProperty(node, 'loopStart', {
@@ -218,6 +222,10 @@ const convertToBufferSourceNode = (workletNode: AudioWorkletNode): AudioBufferSo
     set(seconds: number) {
       console.log('[RubberBandRealtimeNode] set loopStart')
       _loopStart = seconds
+      workletNode.port.postMessage({
+        event: 'loopStart',
+        loopStart: _loopStart
+      })
     }
   })
   Object.defineProperty(node, 'loopEnd', {
@@ -227,6 +235,10 @@ const convertToBufferSourceNode = (workletNode: AudioWorkletNode): AudioBufferSo
     set(seconds: number) {
       console.log('[RubberBandRealtimeNode] set loopEnd')
       _loopEnd = seconds
+      workletNode.port.postMessage({
+        event: 'loopEnd',
+        loopEnd: _loopEnd
+      })
     }
   })
 
