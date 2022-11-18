@@ -46,12 +46,14 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
       (async () => {
         if (method === 'original') {
           audioBufferSourceNode = new AudioBufferSourceNode(audioContext)
-          audioBufferSourceNode.loopStart = 20
-          audioBufferSourceNode.loopEnd = 25
-          console.log(audioBufferSourceNode.detune)
-          console.log(audioBufferSourceNode.playbackRate)
+          audioBufferSourceNode.loopStart = 2
+          audioBufferSourceNode.loopEnd = 4
+          audioBufferSourceNode.loop = true
         } else if (method === 'realtime') {
           audioBufferSourceNode = await createRubberBandRealtimeNode(audioContext, `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`)
+          audioBufferSourceNode.loopStart = 2
+          audioBufferSourceNode.loopEnd = 4
+          audioBufferSourceNode.loop = true
         } else if (method === 'soundtouch') {
           audioBufferSourceNode = await createSoundStretchNode(audioContext, `${process.env.PUBLIC_URL}/soundstretch-processor.js`)
         }

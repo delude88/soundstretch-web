@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import './ReactWaveDraw.css'
 import { FiPause, FiPlay } from 'react-icons/fi'
 import WaveDraw from './WaveDraw'
-
-const SHOW_PLAYBACK = false
+import { createRubberBandRealtimeNode } from 'soundstretch-web'
 
 const ReactWaveDraw = ({ audioContext, audioBuffer }: { audioContext?: AudioContext, audioBuffer?: AudioBuffer }) => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -15,7 +14,8 @@ const ReactWaveDraw = ({ audioContext, audioBuffer }: { audioContext?: AudioCont
       const container = containerRef.current
       const ws = new WaveDraw({
         container,
-        audioContext
+        audioContext,
+        createBuffer: (ctx) => createRubberBandRealtimeNode(ctx, `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`),
       })
       setWaveSurfer(ws)
       return () => {
@@ -43,13 +43,11 @@ const ReactWaveDraw = ({ audioContext, audioBuffer }: { audioContext?: AudioCont
   return (
     <div className='wrapper'>
       <div ref={containerRef} className='container' />
-      {SHOW_PLAYBACK && (
         <button onClick={() => setPlaying(prev => !prev)}>
           {playing
             ? <FiPause />
             : <FiPlay />}
         </button>
-      )}
     </div>
   )
 }

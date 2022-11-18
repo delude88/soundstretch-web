@@ -36,7 +36,10 @@ const reduceAudioPeak = (data: Float32Array, spp: number, scroll: number, width:
   return drawData
 }
 
+export type CreateAudioBufferSourceNodeFunc = (context: BaseAudioContext) => AudioBufferSourceNode | Promise<AudioBufferSourceNode>
+
 class WaveDraw {
+  private readonly _createBuffer: CreateAudioBufferSourceNodeFunc
   private readonly _context: BaseAudioContext
   private readonly _container: HTMLElement
   private readonly _innerContainer: HTMLDivElement
@@ -50,16 +53,24 @@ class WaveDraw {
   private _trackColor: string = 'violet'
   private _width: number
   private _buffer?: AudioBuffer | null
+  private _playing: boolean = false
 
   private _playMark: number = 0
 
   constructor({
                 container,
                 audioContext,
-                height = 128
-              }: { container: HTMLElement, audioContext: BaseAudioContext, height?: number }) {
+                height = 128,
+                createBuffer = (context) => new AudioBufferSourceNode(context)
+              }: {
+    container: HTMLElement,
+    audioContext: BaseAudioContext,
+    height?: number,
+    createBuffer?: CreateAudioBufferSourceNodeFunc
+  }) {
     this._container = container
     this._context = audioContext
+    this._createBuffer = createBuffer
 
     this._innerContainer = document.createElement('div')
     this._playCanvasWrapper = document.createElement('div')
@@ -95,7 +106,7 @@ class WaveDraw {
   }
 
   public get length() {
-    return this._sourceNode?.buffer?.length || 0
+    return this._buffer?.length || 0
   }
 
   public get width() {
@@ -110,18 +121,39 @@ class WaveDraw {
     this.init()
   }
 
-  play() {
-    this._sourceNode?.start()
+  async play() {
+    this._playing = true
+    if (this._buffer) {
+      this._sourceNode = await this._createBuffer(this._context)
+      this._sourceNode.buffer = this._buffer
+      this._sourceNode?.start()
+    }
   }
 
   pause() {
+    this._playing = false
     this._sourceNode?.stop()
+    this._sourceNode = undefined
   }
 
-  seekTo(sample: number) {
-    if (this._sourceNode?.buffer) {
+  stop() {
+    this._playing = false
+    this._sourceNode?.stop()
+    this._sourceNode = undefined
+    this._playMark = 0
+    this._playCanvasWrapper.style.width = `${this.width / this.length * this._playMark}px`
+  }
+
+  async seekTo(sample: number) {
+    console.log(`[WaveDraw] Seek to ${sample}`)
+    if (this._buffer) {
       this._playMark = sample
       this._playCanvasWrapper.style.width = `${this.width / this.length * this._playMark}px`
+      if(this._playing) {
+        this._sourceNode = await this._createBuffer(this._context)
+        this._sourceNode.buffer = this._buffer
+        this._sourceNode?.start()
+      }
     }
   }
 
