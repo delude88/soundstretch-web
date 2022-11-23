@@ -1,7 +1,6 @@
 import { createNode, RubberBandRealtimeNode } from './RubberBandRealtimeNode'
 
-
-async function createRubberBandRealtimeNode(
+async function createRubberBandNode(
   context: BaseAudioContext,
   url: string,
   options?: AudioWorkletNodeOptions
@@ -15,4 +14,4 @@ async function createRubberBandRealtimeNode(
   }
 }
 
-export { createRubberBandRealtimeNode }
+export { createRubberBandNode }
