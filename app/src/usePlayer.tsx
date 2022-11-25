@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 // @ts-ignore
 import * as createModule from 'soundstretch-web/wasm/rubberband'
-import { RubberBandModule, createRubberBandRealtimeNode, createSoundStretchNode, RubberBandRealtimeNode } from 'soundstretch-web'
+import { RubberBandModule, createRubberBandNode, createRubberBandNodeForTone, createSoundStretchNode, RubberBandRealtimeNode } from 'soundstretch-web'
 import debounce from 'lodash/debounce'
 
 const DEBOUNCE_DELAY = 500
@@ -14,6 +14,7 @@ interface PlaybackSettings {
 export type Method = 'original' | 'realtime' | 'soundtouch'
 
 const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
+  const [toneUsed, setToneUsed] = useState<boolean>(false)
   const [method, setMethod] = useState<Method>('soundtouch')
   const [pitch, setPitch] = useState<number>(0)
   const [tempo, setTempo] = useState<number>(1)
@@ -44,13 +45,17 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
     if (module && audioBuffer) {
       let audioBufferSourceNode: AudioBufferSourceNode | undefined
       (async () => {
+        if(toneUsed) {
+
+        }
+
         if (method === 'original') {
           audioBufferSourceNode = new AudioBufferSourceNode(audioContext)
           audioBufferSourceNode.loopStart = 2
           audioBufferSourceNode.loopEnd = 4
           audioBufferSourceNode.loop = true
         } else if (method === 'realtime') {
-          audioBufferSourceNode = await createRubberBandRealtimeNode(audioContext, `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`)
+          audioBufferSourceNode = await createRubberBandNode(audioContext, `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`)
           audioBufferSourceNode.loopStart = 2
           audioBufferSourceNode.loopEnd = 4
           audioBufferSourceNode.loop = true
