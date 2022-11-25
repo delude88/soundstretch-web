@@ -57,3 +57,7 @@
     font-size: small;
     max-width: 600px;
 }
+
+.row {
+    width: 100%;
+}

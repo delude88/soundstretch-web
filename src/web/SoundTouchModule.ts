@@ -38,6 +38,17 @@ export interface SoundTouch {
 
   clear(): void
 }
+
+export interface Test {
+  new(size: number, numChannels: number): Test
+
+  write(ptr: number, length: number): void
+
+  modify(factor: number): void
+
+  read(ptr: number, length: number): void
+}
+
 */
 
 export interface SoundStretch {
@@ -64,18 +75,8 @@ export interface SoundStretch {
   pull(ptr: number, length: number): number
 }
 
-export interface Test {
-  new(size: number, numChannels: number): Test
-
-  write(ptr: number, length: number): void
-
-  modify(factor: number): void
-
-  read(ptr: number, length: number): void
-}
-
-export interface BPMDetect {
-  new(numChannels: number, sampleRate: number): BPMDetect
+export interface BPMDetector {
+  new(numChannels: number, sampleRate: number): BPMDetector
 
   inputSamples(ptr: number, length: number): number
 
@@ -85,8 +86,8 @@ export interface BPMDetect {
 }
 
 export interface SoundTouchModule extends EmscriptenModule {
-  BPMDetect: BPMDetect
-  //SoundTouch: SoundTouch
+  BPMDetector: BPMDetector
   SoundStretch: SoundStretch
-  Test: Test
+  //SoundTouch: SoundTouch
+  //Test: Test
 }

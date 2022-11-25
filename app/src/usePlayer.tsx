@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 // @ts-ignore
 import * as createModule from 'soundstretch-web/wasm/rubberband'
-import { RubberBandModule, createRubberBandNode, createRubberBandNodeForTone, createSoundStretchNode, RubberBandRealtimeNode } from 'soundstretch-web'
+import {
+  RubberBandModule,
+  createRubberBandNode,
+  createRubberBandNodeForTone,
+  createSoundStretchNode,
+  RubberBandRealtimeNode,
+  BPMCounterNode,
+  createBPMCounterNode,
+  createBPMCounterNodeForTone
+} from 'soundstretch-web'
 import debounce from 'lodash/debounce'
 
 const DEBOUNCE_DELAY = 500
@@ -11,16 +20,22 @@ interface PlaybackSettings {
   timeRatio: number
 }
 
+const RUBBERBAND_REALTIME_PROCESSOR_URL = `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`
+const SOUNDSTRETCH_PROCESSOR_URL = `${process.env.PUBLIC_URL}/soundstretch-processor.js`
+const BPM_COUNT_PROCESSOR_URL = `${process.env.PUBLIC_URL}/bpm-count-processor.js`
+
 export type Method = 'original' | 'realtime' | 'soundtouch'
 
 const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
   const [toneUsed, setToneUsed] = useState<boolean>(false)
-  const [method, setMethod] = useState<Method>('soundtouch')
+  const [method, setMethod] = useState<Method>('realtime')
+  const [bpm, setBpm] = useState<number>()
   const [pitch, setPitch] = useState<number>(0)
   const [tempo, setTempo] = useState<number>(1)
   const [preserved, setPreserved] = useState<boolean>(false)
   const [playing, setPlaying] = useState<boolean>(false)
   const [sourceNode, setSourceNode] = useState<AudioBufferSourceNode>()
+  const [counterNode, setCounterNode] = useState<BPMCounterNode>()
   const [module, setModule] = useState<RubberBandModule>()
   const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings>({
     pitch: 1,
@@ -34,6 +49,40 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
   }, [])
 
   useEffect(() => {
+    if (toneUsed) {
+      createBPMCounterNodeForTone(BPM_COUNT_PROCESSOR_URL)
+        .then(node => setCounterNode(node))
+    } else if (audioContext) {
+      createBPMCounterNode(audioContext, BPM_COUNT_PROCESSOR_URL)
+        .then(node => setCounterNode(node))
+    }
+    return () => {
+      setCounterNode(undefined)
+    }
+  }, [toneUsed, audioContext])
+
+  useEffect(() => {
+    if (sourceNode && counterNode) {
+      sourceNode.connect(counterNode)
+      return () => {
+        sourceNode.disconnect(counterNode)
+      }
+    }
+  }, [sourceNode, counterNode])
+
+  useEffect(() => {
+    if (counterNode && playing) {
+      const interval = setInterval(() => {
+        counterNode.getBpm()
+          .then(value => setBpm(value))
+      }, 1000)
+      return () => {
+        clearInterval(interval)
+      }
+    }
+  })
+
+  useEffect(() => {
     debouncePlaybackSettings({
       pitch: pitch,
       timeRatio: tempo
@@ -45,7 +94,7 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
     if (module && audioBuffer) {
       let audioBufferSourceNode: AudioBufferSourceNode | undefined
       (async () => {
-        if(toneUsed) {
+        if (toneUsed) {
 
         }
 
@@ -55,12 +104,12 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
           audioBufferSourceNode.loopEnd = 4
           audioBufferSourceNode.loop = true
         } else if (method === 'realtime') {
-          audioBufferSourceNode = await createRubberBandNode(audioContext, `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`)
+          audioBufferSourceNode = await createRubberBandNode(audioContext, RUBBERBAND_REALTIME_PROCESSOR_URL)
           audioBufferSourceNode.loopStart = 2
           audioBufferSourceNode.loopEnd = 4
           audioBufferSourceNode.loop = true
         } else if (method === 'soundtouch') {
-          audioBufferSourceNode = await createSoundStretchNode(audioContext, `${process.env.PUBLIC_URL}/soundstretch-processor.js`)
+          audioBufferSourceNode = await createSoundStretchNode(audioContext, SOUNDSTRETCH_PROCESSOR_URL)
         }
         if (audioBufferSourceNode) {
           audioBufferSourceNode.connect(audioContext.destination)
@@ -101,8 +150,8 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
   }, [sourceNode, playbackSettings.pitch])
 
   useEffect(() => {
-    if (sourceNode && method === "realtime") {
-      if((sourceNode as any).preserveFormantShave) {
+    if (sourceNode && method === 'realtime') {
+      if ((sourceNode as any).preserveFormantShave) {
         const func = (sourceNode as RubberBandRealtimeNode).preserveFormantShave
         func(preserved)
       }

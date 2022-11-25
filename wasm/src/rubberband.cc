@@ -4,36 +4,8 @@
 
 using namespace emscripten;
 
-EMSCRIPTEN_BINDINGS(CLASS_OfflineRubberBand) {
-        class_<OfflineRubberBand>("OfflineRubberBand")
-
-                .constructor<size_t, size_t, double, double>()
-
-                .function("getChannelCount",
-                          &OfflineRubberBand::getChannelCount)
-
-                .function("getTimeRatio",
-                          &OfflineRubberBand::getTimeRatio)
-
-                .function("getPitchScale",
-                          &OfflineRubberBand::getPitchScale)
-
-                .function("available",
-                          &OfflineRubberBand::available)
-
-                .function("setInput",
-                          &OfflineRubberBand::setInput,
-                          allow_raw_pointers())
-
-                .function("pull",
-                          &OfflineRubberBand::pull,
-                          allow_raw_pointers())
-        ;
-}
-
 EMSCRIPTEN_BINDINGS(CLASS_RealtimeRubberBand) {
         class_<RealtimeRubberBand>("RealtimeRubberBand")
-
                 .constructor<size_t, size_t>()
 
                 .function("getChannelCount",
@@ -75,3 +47,31 @@ EMSCRIPTEN_BINDINGS(CLASS_RealtimeRubberBand) {
                           allow_raw_pointers())
         ;
 }
+
+/*
+EMSCRIPTEN_BINDINGS(CLASS_OfflineRubberBand) {
+        class_<OfflineRubberBand>("OfflineRubberBand")
+
+                .constructor<size_t, size_t, double, double>()
+
+                .function("getChannelCount",
+                          &OfflineRubberBand::getChannelCount)
+
+                .function("getTimeRatio",
+                          &OfflineRubberBand::getTimeRatio)
+
+                .function("getPitchScale",
+                          &OfflineRubberBand::getPitchScale)
+
+                .function("available",
+                          &OfflineRubberBand::available)
+
+                .function("setInput",
+                          &OfflineRubberBand::setInput,
+                          allow_raw_pointers())
+
+                .function("pull",
+                          &OfflineRubberBand::pull,
+                          allow_raw_pointers())
+        ;
+}*/

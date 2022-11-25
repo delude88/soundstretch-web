@@ -1,13 +1,8 @@
 #include "emscripten/bind.h"
-#include "BPMDetect.h"
 #include "SoundStretch.h"
-#include "SoundTouch.h"
-#include "Test.h"
+#include "BPMDetector.h"
 
 using namespace emscripten;
-
-using soundtouch::SoundTouch;
-using soundtouch::BPMDetect;
 
 EMSCRIPTEN_BINDINGS(CLASS_SoundStretch) {
         class_<SoundStretch>("SoundStretch")
@@ -43,6 +38,19 @@ EMSCRIPTEN_BINDINGS(CLASS_SoundStretch) {
 
                 .function("push",
                           &SoundStretch::push,
+                          allow_raw_pointers());
+}
+EMSCRIPTEN_BINDINGS(CLASS_BPMDetector) {
+        class_<BPMDetector>("BPMDetector")
+                .constructor<int, int>()
+
+                .function("inputSamples",
+                          &BPMDetector::inputSamples,
+                          allow_raw_pointers())
+                .function("getBpm",
+                          &BPMDetector::getBpm)
+                .function("getBeats",
+                          &BPMDetector::getBeats,
                           allow_raw_pointers());
 }
 
@@ -92,33 +100,3 @@ EMSCRIPTEN_BINDINGS(CLASS_SoundTouch) {
                           &SoundTouch::clear);
 }
  */
-
-EMSCRIPTEN_BINDINGS(CLASS_BPMDetect) {
-        class_<BPMDetect>("BPMDetect")
-                .constructor<int, int>()
-
-                .function("inputSamples",
-                          &BPMDetect::inputSamples,
-                          allow_raw_pointers())
-                .function("getBpm",
-                          &BPMDetect::getBpm)
-                .function("getBeats",
-                          &BPMDetect::getBeats,
-                          allow_raw_pointers());
-}
-
-EMSCRIPTEN_BINDINGS(CLASS_Test) {
-        class_<Test>("Test")
-                .constructor<size_t, size_t>()
-
-                .function("write",
-                          &Test::write,
-                          allow_raw_pointers())
-
-                .function("modify",
-                          &Test::modify)
-
-                .function("read",
-                          &Test::read,
-                          allow_raw_pointers());
-}

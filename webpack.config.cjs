@@ -3,7 +3,6 @@ const path = require('path');
 const worklets = [
   'src/worklet/soundstretch-processor.ts',
   'src/worklet/bpm-count-processor.ts',
-  'src/worker/soundstretch.worker.ts',
   'src/worklet/rubberband-source-processor.ts',
   'src/worklet/rubberband-realtime-processor.ts'
 ]

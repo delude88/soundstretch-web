@@ -23,6 +23,8 @@ add_library(ChannelTransport
 add_library(soundtouchclasses
         src/SoundStretch.cpp
         src/SoundStretch.h
+        src/BPMDetector.cpp
+        src/BPMDetector.h
         )
 target_include_directories(soundtouchclasses
         PUBLIC
@@ -32,7 +34,6 @@ target_include_directories(soundtouchclasses
 target_link_libraries(soundtouchclasses
         PUBLIC
         SoundTouch
-        ChannelTransport
         )
 
 add_library(rubberbandofficial
@@ -45,8 +46,6 @@ target_include_directories(rubberbandofficial
 add_library(rubberbandclasses
         src/RealtimeRubberBand.cpp
         src/RealtimeRubberBand.h
-        src/OfflineRubberBand.cpp
-        src/OfflineRubberBand.h
         )
 target_include_directories(rubberbandclasses
         PUBLIC
@@ -55,7 +54,6 @@ target_include_directories(rubberbandclasses
 target_link_libraries(rubberbandclasses
         PUBLIC
         rubberbandofficial
-        ChannelTransport
         )
 
 # Build test executable for cpp
@@ -71,8 +69,6 @@ target_link_libraries(demo
 # Build final wasm executable
 add_executable(soundtouch
         src/soundtouch.cc
-        src/Test.cpp
-        src/Test.h
         )
 
 target_link_libraries(soundtouch

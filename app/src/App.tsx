@@ -37,11 +37,13 @@ function App() {
     <div className='App'>
       <header className='App-header'>
         <img src={logo} className='App-logo' alt='logo' />
-        <ReactWaveDraw audioContext={audioContext} audioBuffer={audioBuffer} />
-        {USE_WAVESURFER && <Wavesurfer audioContext={audioContext} />}
         <label>
           <input type='file' accept='audio/*' multiple={false} onChange={handleFileInputChange} />
         </label>
+        <div className='row'>
+          <ReactWaveDraw audioContext={audioContext} audioBuffer={audioBuffer} />
+        </div>
+        {USE_WAVESURFER && <div className='row'><Wavesurfer audioContext={audioContext} /></div>}
         <label>
           <h3>Method</h3>
           <select value={method} onChange={(e) => setMethod(e.currentTarget.value as Method)}>

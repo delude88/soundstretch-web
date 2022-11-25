@@ -1,6 +1,6 @@
 import { cloneArrayBuffer } from './cloneArrayBuffer'
 
-const convertToBufferSourceNode = (workletNode: AudioWorkletNode): AudioBufferSourceNode => {
+const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBufferSourceNode => {
   const node = workletNode as any
   let _buffer: AudioBuffer | null = null
   let _started: boolean = false
@@ -259,4 +259,4 @@ const convertToBufferSourceNode = (workletNode: AudioWorkletNode): AudioBufferSo
   return node as AudioBufferSourceNode
 }
 
-export {convertToBufferSourceNode}
+export {convertToAudioBufferSourceNode}
