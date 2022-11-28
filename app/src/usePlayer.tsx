@@ -139,9 +139,9 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
         }
         if (audioBufferSourceNode) {
           audioBufferSourceNode.buffer = audioBuffer
-          audioBufferSourceNode.loopStart = 2
+          /*audioBufferSourceNode.loopStart = 2
           audioBufferSourceNode.loopEnd = 4
-          audioBufferSourceNode.loop = true
+          audioBufferSourceNode.loop = true*/
         }
         setSourceNode(audioBufferSourceNode)
       })()
