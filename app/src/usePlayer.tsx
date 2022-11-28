@@ -9,11 +9,14 @@ import {
   RubberBandRealtimeNode,
   BPMCounterNode,
   createBPMCounterNode,
-  createBPMCounterNodeForTone
+  createBPMCounterNodeForTone,
+  createSoundStretchNodeForTone
 } from 'soundstretch-web'
 import debounce from 'lodash/debounce'
+import * as Tone from 'tone'
 
 const DEBOUNCE_DELAY = 500
+const BPM_ENABLED = false
 
 interface PlaybackSettings {
   pitch: number,
@@ -24,10 +27,11 @@ const RUBBERBAND_REALTIME_PROCESSOR_URL = `${process.env.PUBLIC_URL}/rubberband-
 const SOUNDSTRETCH_PROCESSOR_URL = `${process.env.PUBLIC_URL}/soundstretch-processor.js`
 const BPM_COUNT_PROCESSOR_URL = `${process.env.PUBLIC_URL}/bpm-count-processor.js`
 
+export type Engine = 'webaudio' | 'tonejs'
 export type Method = 'original' | 'realtime' | 'soundtouch'
 
 const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
-  const [toneUsed, setToneUsed] = useState<boolean>(false)
+  const [engine, setEngine] = useState<Engine>('webaudio')
   const [method, setMethod] = useState<Method>('realtime')
   const [bpm, setBpm] = useState<number>()
   const [pitch, setPitch] = useState<number>(0)
@@ -49,26 +53,39 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
   }, [])
 
   useEffect(() => {
-    if (toneUsed) {
-      createBPMCounterNodeForTone(BPM_COUNT_PROCESSOR_URL)
-        .then(node => setCounterNode(node))
-    } else if (audioContext) {
-      createBPMCounterNode(audioContext, BPM_COUNT_PROCESSOR_URL)
-        .then(node => setCounterNode(node))
+    if (BPM_ENABLED && sourceNode) {
+      if (engine === 'tonejs') {
+        createBPMCounterNodeForTone(BPM_COUNT_PROCESSOR_URL)
+          .then(node => {
+            setCounterNode(node)
+          })
+      } else if (audioContext) {
+        createBPMCounterNode(audioContext, BPM_COUNT_PROCESSOR_URL)
+          .then(node => {
+            setCounterNode(node)
+          })
+      }
+      return () => {
+        setCounterNode(undefined)
+      }
     }
-    return () => {
-      setCounterNode(undefined)
-    }
-  }, [toneUsed, audioContext])
+  }, [engine, audioContext, sourceNode])
 
   useEffect(() => {
     if (sourceNode && counterNode) {
-      sourceNode.connect(counterNode)
-      return () => {
-        sourceNode.disconnect(counterNode)
+      if (engine === 'tonejs') {
+        Tone.connect(sourceNode, counterNode)
+        return () => {
+          Tone.disconnect(sourceNode, counterNode)
+        }
+      } else {
+        sourceNode.connect(counterNode)
+        return () => {
+          sourceNode.disconnect(counterNode)
+        }
       }
     }
-  }, [sourceNode, counterNode])
+  }, [sourceNode, counterNode, engine])
 
   useEffect(() => {
     if (counterNode && playing) {
@@ -94,45 +111,60 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
     if (module && audioBuffer) {
       let audioBufferSourceNode: AudioBufferSourceNode | undefined
       (async () => {
-        if (toneUsed) {
-
-        }
-
-        if (method === 'original') {
-          audioBufferSourceNode = new AudioBufferSourceNode(audioContext)
-          audioBufferSourceNode.loopStart = 2
-          audioBufferSourceNode.loopEnd = 4
-          audioBufferSourceNode.loop = true
-        } else if (method === 'realtime') {
-          audioBufferSourceNode = await createRubberBandNode(audioContext, RUBBERBAND_REALTIME_PROCESSOR_URL)
-          audioBufferSourceNode.loopStart = 2
-          audioBufferSourceNode.loopEnd = 4
-          audioBufferSourceNode.loop = true
-        } else if (method === 'soundtouch') {
-          audioBufferSourceNode = await createSoundStretchNode(audioContext, SOUNDSTRETCH_PROCESSOR_URL)
+        if (engine === 'tonejs') {
+          await Tone.start()
+          // The tone.js way
+          if (method === 'realtime') {
+            audioBufferSourceNode = await createRubberBandNodeForTone(RUBBERBAND_REALTIME_PROCESSOR_URL)
+          } else if (method === 'soundtouch') {
+            audioBufferSourceNode = await createSoundStretchNodeForTone(SOUNDSTRETCH_PROCESSOR_URL)
+          } else {
+            // NOT SUPPORTED
+            //audioBufferSourceNode = Tone.context.createBufferSource()
+            audioBufferSourceNode = undefined
+          }
+          if (audioBufferSourceNode) {
+            Tone.connect(audioBufferSourceNode, Tone.getDestination())
+          }
+        } else if (audioContext) {
+          // The Web Audio API way
+          if (method === 'realtime') {
+            audioBufferSourceNode = await createRubberBandNode(audioContext, RUBBERBAND_REALTIME_PROCESSOR_URL)
+          } else if (method === 'soundtouch') {
+            audioBufferSourceNode = await createSoundStretchNode(audioContext, SOUNDSTRETCH_PROCESSOR_URL)
+          } else {
+            audioBufferSourceNode = new AudioBufferSourceNode(audioContext)
+          }
+          audioBufferSourceNode?.connect(audioContext.destination)
         }
         if (audioBufferSourceNode) {
-          audioBufferSourceNode.connect(audioContext.destination)
           audioBufferSourceNode.buffer = audioBuffer
-          setSourceNode(audioBufferSourceNode)
+          audioBufferSourceNode.loopStart = 2
+          audioBufferSourceNode.loopEnd = 4
+          audioBufferSourceNode.loop = true
         }
+        setSourceNode(audioBufferSourceNode)
       })()
+        .catch(err => console.error(err))
       return () => {
-        if (audioBufferSourceNode) {
-          setSourceNode(undefined)
+        if (engine === 'tonejs') {
+          if (audioBufferSourceNode) {
+            Tone.disconnect(audioBufferSourceNode, Tone.getDestination())
+          }
+        } else {
+          audioBufferSourceNode?.disconnect(audioContext.destination)
         }
+        setSourceNode(undefined)
       }
     }
-  }, [module, audioBuffer, playing, audioContext, method])
+  }, [module, audioBuffer, playing, audioContext, method, engine])
 
   useEffect(() => {
-    if (sourceNode) {
-      if (playing) {
-        const node = sourceNode
-        node.start()
-        return () => {
-          node.stop()
-        }
+    if (sourceNode && playing) {
+      const node = sourceNode
+      node.start()
+      return () => {
+        node.stop()
       }
     }
   }, [sourceNode, playing])
@@ -169,7 +201,10 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
     tempo,
     setPitch,
     setTempo,
-    setPlaying
+    setPlaying,
+    bpm,
+    engine,
+    setEngine
   }
 }
 export { usePlayer }

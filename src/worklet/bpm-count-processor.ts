@@ -1,7 +1,7 @@
 import { Beat } from '../web/Beat'
 import { Float32ChannelTransport } from '../web/Float32ChannelTransport'
 import { BPMDetector, SoundTouchModule } from '../web/SoundTouchModule'
-import * as createModule from '../../wasm/build/rubberband'
+import * as createModule from '../../wasm/build/soundtouch.js'
 
 const RENDER_QUANTUM_FRAMES = 128
 
@@ -21,10 +21,12 @@ class BpmCountProcessor extends AudioWorkletProcessor {
         const { event } = data
         switch (event) {
           case 'bpm': {
+            console.log(`[bpm-count-processor] bpm requested`)
             this.port.postMessage({ event: 'bpm', bpm: this.api?.getBpm() || 0 })
             break
           }
           case 'beats': {
+            console.log(`[bpm-count-processor] beats requested`)
             if (data.limit === undefined) throw new Error('Missing limit key')
             const limit = parseInt(data.limit)
             if (limit === Number.NaN) throw new Error(`Invalid limit key ${data.limit}`)

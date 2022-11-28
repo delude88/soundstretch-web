@@ -1,14 +1,13 @@
 import React, { useCallback, useMemo } from 'react'
 import logo from './logo.svg'
 import './App.css'
-import { Method, usePlayer } from './usePlayer'
+import { Engine, Method, usePlayer } from './usePlayer'
 import { IoPlayOutline, IoStopOutline } from 'react-icons/io5'
-import { useTest } from './useTest'
 import { useAudioFileChooser } from './useAudioFileChooser'
 import Wavesurfer from './Wavesurfer'
 import ReactWaveDraw from './wavedraw/ReactWaveDraw'
 
-const USE_WAVESURFER = true
+const USE_WAVESURFER = false
 
 function App() {
   const audioContext = useMemo(() => new AudioContext(), [])
@@ -19,14 +18,15 @@ function App() {
     playing,
     pitch,
     tempo,
+    engine,
+    bpm,
     setPreserved,
     setTempo,
     setPitch,
     setPlaying,
-    setMethod
+    setMethod,
+    setEngine
   } = usePlayer(audioContext, audioBuffer)
-
-  const runTest = useTest()
 
   const handlePlaybackButton = useCallback(() => {
     audioContext.resume()
@@ -44,14 +44,16 @@ function App() {
           <ReactWaveDraw audioContext={audioContext} audioBuffer={audioBuffer} />
         </div>
         {USE_WAVESURFER && <div className='row'><Wavesurfer audioContext={audioContext} /></div>}
-        <label>
-          <h3>Method</h3>
-          <select value={method} onChange={(e) => setMethod(e.currentTarget.value as Method)}>
-            <option value='original'>Original</option>
-            <option value='realtime'>Rubberband</option>
-            <option value='soundtouch'>Soundtouch</option>
-          </select>
-        </label>
+        <h3>Method</h3>
+        <select value={engine} onChange={(e) => setEngine(e.currentTarget.value as Engine)}>
+          <option value='webaudio'>Web Audio API</option>
+          <option value='tonejs'>Tone.js</option>
+        </select>
+        <select value={method} onChange={(e) => setMethod(e.currentTarget.value as Method)}>
+          <option value='original'>Original</option>
+          <option value='realtime'>Rubberband</option>
+          <option value='soundtouch'>Soundtouch</option>
+        </select>
         {method === 'realtime' && (
           <p className='micro'>
             <label>
@@ -89,11 +91,7 @@ function App() {
           </button>
         </p>
         <p>
-          <button onClick={runTest}>
-            <h1>
-              Run test
-            </h1>
-          </button>
+          {bpm ? `${bpm} beats per minute` : ''}
         </p>
       </header>
     </div>

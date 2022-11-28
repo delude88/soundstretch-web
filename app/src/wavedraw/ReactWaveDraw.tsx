@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import './ReactWaveDraw.css'
 import { FiPause, FiPlay } from 'react-icons/fi'
 import WaveDraw from './WaveDraw'
-import { createRubberBandRealtimeNode } from 'soundstretch-web'
+import { createRubberBandNode } from 'soundstretch-web'
 
 const ReactWaveDraw = ({ audioContext, audioBuffer }: { audioContext?: AudioContext, audioBuffer?: AudioBuffer }) => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -15,7 +15,7 @@ const ReactWaveDraw = ({ audioContext, audioBuffer }: { audioContext?: AudioCont
       const ws = new WaveDraw({
         container,
         audioContext,
-        createBuffer: (ctx) => createRubberBandRealtimeNode(ctx, `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`),
+        createBuffer: (ctx) => createRubberBandNode(ctx, `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`),
       })
       setWaveSurfer(ws)
       return () => {

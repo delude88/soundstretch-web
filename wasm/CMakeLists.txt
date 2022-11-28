@@ -74,7 +74,6 @@ add_executable(soundtouch
 target_link_libraries(soundtouch
         PUBLIC
         soundtouchclasses
-        rubberbandclasses
         embind
         )
 

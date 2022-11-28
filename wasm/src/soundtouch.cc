@@ -40,6 +40,7 @@ EMSCRIPTEN_BINDINGS(CLASS_SoundStretch) {
                           &SoundStretch::push,
                           allow_raw_pointers());
 }
+
 EMSCRIPTEN_BINDINGS(CLASS_BPMDetector) {
         class_<BPMDetector>("BPMDetector")
                 .constructor<int, int>()
