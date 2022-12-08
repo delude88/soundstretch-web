@@ -126,7 +126,7 @@ class WaveDraw {
     if (this._buffer) {
       this._sourceNode = await this._createBuffer(this._context)
       this._sourceNode.buffer = this._buffer
-      this._sourceNode?.start()
+      this._sourceNode?.start(this._playMark / this._buffer.sampleRate)
     }
   }
 
@@ -152,7 +152,7 @@ class WaveDraw {
       if(this._playing) {
         this._sourceNode = await this._createBuffer(this._context)
         this._sourceNode.buffer = this._buffer
-        this._sourceNode?.start()
+        this._sourceNode.start(this._playMark / this._buffer.sampleRate)
       }
     }
   }

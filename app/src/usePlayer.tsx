@@ -162,7 +162,10 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
   useEffect(() => {
     if (sourceNode && playing) {
       const node = sourceNode
-      node.start()
+      node.loop = true
+      node.loopStart = 9
+      node.loopEnd = 12
+      node.start(0, 8)
       return () => {
         node.stop()
       }

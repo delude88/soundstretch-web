@@ -17,7 +17,6 @@ RealtimeRubberBand::RealtimeRubberBand(size_t sample_rate, size_t channel_count,
     _queue = new std::queue<float> *[channel_count];
     _buffer_size = buffer_size;
 #else
-    std::cout << "Using RubberBand::RingBuffer instead of std::queue" << std::endl;
     _buffer = new RubberBand::RingBuffer<float> *[channel_count];
 #endif
     for (size_t c = 0; c < channel_count; ++c) {
