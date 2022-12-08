@@ -54,8 +54,9 @@ class WaveDraw {
   private _width: number
   private _buffer?: AudioBuffer | null
   private _playing: boolean = false
-
   private _playMark: number = 0
+  private _detune: number = 0
+  private _playbackRate: number = 1
 
   constructor({
                 container,
@@ -91,7 +92,7 @@ class WaveDraw {
 
     this._clickArea.onclick = (ev) => {
       const x = ev.x - this._innerContainer.getBoundingClientRect().x
-      this.seekTo(Math.round(this.length / this.width * x))
+      void this.seekTo(Math.round(this.length / this.width * x))
     }
     this._resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -118,26 +119,49 @@ class WaveDraw {
     this._trackCanvas.style.width = `${width}px`
     this._playCanvas.style.width = `${width}px`
     this.seekTo(this._playMark)
-    this.init()
+      .catch(err => console.error(err))
+  }
+
+  private async playInternal() {
+    if (this._buffer) {
+      console.info('REINIT BUFFER')
+      this._sourceNode?.disconnect(this._context.destination)
+      this._sourceNode?.stop()
+      this._sourceNode = undefined
+      this._sourceNode = await this._createBuffer(this._context)
+      if(this._playbackRate !== 1) this._sourceNode.playbackRate.setValueAtTime(this._playbackRate, 0)
+      if(this._detune !== 0) this._sourceNode.detune.setValueAtTime(this._detune, 0)
+      this._sourceNode.connect(this._context.destination)
+      this._sourceNode.buffer = this._buffer
+      this._sourceNode.start(0, this._playMark / this._buffer.sampleRate)
+    }
   }
 
   async play() {
     this._playing = true
-    if (this._buffer) {
-      this._sourceNode = await this._createBuffer(this._context)
-      this._sourceNode.buffer = this._buffer
-      this._sourceNode?.start(this._playMark / this._buffer.sampleRate)
-    }
+    await this.playInternal()
+  }
+
+  setDetune(detune: number) {
+    this._detune = detune
+    this._sourceNode?.detune.setValueAtTime(this._detune, 0)
+  }
+
+  setPlaybackRate(playbackRate: number) {
+    this._playbackRate = playbackRate
+    this._sourceNode?.playbackRate.setValueAtTime(this._playbackRate, 0)
   }
 
   pause() {
     this._playing = false
+    this._sourceNode?.disconnect(this._context.destination)
     this._sourceNode?.stop()
     this._sourceNode = undefined
   }
 
   stop() {
     this._playing = false
+    this._sourceNode?.disconnect(this._context.destination)
     this._sourceNode?.stop()
     this._sourceNode = undefined
     this._playMark = 0
@@ -146,35 +170,26 @@ class WaveDraw {
 
   async seekTo(sample: number) {
     console.log(`[WaveDraw] Seek to ${sample}`)
-    if (this._buffer) {
-      this._playMark = sample
-      this._playCanvasWrapper.style.width = `${this.width / this.length * this._playMark}px`
-      if(this._playing) {
-        this._sourceNode = await this._createBuffer(this._context)
-        this._sourceNode.buffer = this._buffer
-        this._sourceNode.start(this._playMark / this._buffer.sampleRate)
-      }
+    this._playMark = sample
+    this._playCanvasWrapper.style.width = `${this.width / this.length * this._playMark}px`
+    if (this._playing) {
+      await this.playInternal()
     }
   }
 
-  setBuffer(audioBuffer: AudioBuffer) {
+  async setBuffer(audioBuffer: AudioBuffer) {
     this._buffer = audioBuffer
-    const sourceNode = new AudioBufferSourceNode(this._context)
-    sourceNode.buffer = audioBuffer
-    this.setSourceNode(sourceNode)
-  }
-
-  setSourceNode(sourceNode: AudioBufferSourceNode) {
-    this._sourceNode = sourceNode
-    this._buffer = this._sourceNode.buffer
     this.init()
+    if (this._playing) {
+      await this.playInternal()
+    }
   }
 
   init() {
     console.log('[WaveDraw] init')
     // Draw wave form
-    if (this._sourceNode?.buffer && this._sourceNode.buffer.numberOfChannels > 0) {
-      const leftChannel = this._sourceNode.buffer.getChannelData(0)
+    if (this._buffer && this._buffer.numberOfChannels > 0) {
+      const leftChannel = this._buffer.getChannelData(0)
       /*const rightChannel = this._sourceNode.buffer.numberOfChannels > 1
         ? this._sourceNode.buffer.getChannelData(0)
         : leftChannel*/
