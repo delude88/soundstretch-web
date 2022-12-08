@@ -1,6 +1,6 @@
 {
   "name": "soundstretch-web",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Using sound stretch in web via WebAssembly",
   "homepage": "https://delude88.github.io/soundstretch-web/",
   "main": "./dist/cjs/index.js",
