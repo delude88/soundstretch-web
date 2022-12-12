@@ -2,7 +2,12 @@ import { RubberBandRealtimeNode } from './RubberBandRealtimeNode'
 import { convertToAudioBufferSourceNode } from './util/convertToAudioBufferSourceNode'
 
 const createNode = (context: BaseAudioContext, options?: AudioWorkletNodeOptions): RubberBandRealtimeNode => {
-  const workletNode = new AudioWorkletNode(context, 'rubberband-realtime-processor', options)
+  const workletNode = new AudioWorkletNode(context, 'rubberband-realtime-processor', {
+    ...options
+  })
+
+  workletNode.parameters
+
   const node = convertToAudioBufferSourceNode(workletNode) as any
   node.preserveFormantShave = (enabled: boolean) => {
     workletNode.port.postMessage({ event: 'preserve', preserve: enabled })

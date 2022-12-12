@@ -2,10 +2,30 @@ import { RealtimeRubberBand, RubberBandModule } from '../web/RubberBandModule'
 import * as createModule from '../../wasm/build/rubberband.js'
 import { Float32ChannelTransport } from '../web/Float32ChannelTransport'
 
+const MAXIMUM_INPUT_SIZE = 8196
 const RENDER_QUANTUM_FRAMES = 128
 const DEBUG = true
 
 class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [
+      {
+        name: 'detune',
+        defaultValue: 0,
+        minValue: -3.4028234663852886e+38,
+        maxValue: 3.4028234663852886e+38,
+        automationRate: 'k-rate'
+      },
+      {
+        name: 'playbackRate',
+        defaultValue: 1,
+        minValue: 0.00000000001,
+        maxValue: 3.4028234663852886e+38,
+        automationRate: 'k-rate'
+      }
+    ]
+  }
+
   private module?: RubberBandModule
   private api?: RealtimeRubberBand
   private inputBuffer?: Float32ChannelTransport
@@ -25,10 +45,12 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
   private loopEnd?: number
   private preserve?: boolean
   private sampleRate: number = sampleRate
-  private pitchScale: number = 0
-  private timeRatio: number = 1
+
   private offset: number = 0
   private duration?: number
+
+  private detune: number = 0
+  private playbackRate: number = 1
 
   private quality: {
     underruns: number,
@@ -37,8 +59,6 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
     underruns: 0,
     runs: 0
   }
-
-  private outputPos = 0
 
   constructor() {
     super()
@@ -74,7 +94,8 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
             this.bufferPosition = this.offset
             this.playPosition = this.offset
             this.bufferEndPosition = this.buffer.length > 0 ? this.buffer[0].length : 0
-            this.playEndPosition = this.bufferEndPosition * this.timeRatio
+            const timeRatio = ((100 / this.playbackRate) / 100) || 1
+            this.playEndPosition = this.bufferEndPosition * timeRatio
             this.reInit()
             break
           }
@@ -124,27 +145,10 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
             if (DEBUG) console.log(`[rubberband-realtime-processor] loopEnd=${this.loopEnd}samples or ${this.loopEnd / this.sampleRate}s`)
             break
           }
-          case 'pitch': {
-            if (data.pitch === undefined) throw new Error('Missing pitch key')
-            const value = parseFloat(data.pitch)
-            if (value === Number.NaN) throw new Error(`Invalid pitch key ${data.pitch}`)
-            this.pitchScale = value !== 0 ? Math.pow(2.0, value / 1200.0) : 0
-            this.api?.setPitchScale(this.pitchScale)
-            break
-          }
           case 'preserve': {
             if (data.preserve === undefined) throw new Error('Missing preserve key')
             this.preserve = data.preserve
             this.api?.preserveFormantShave(this.preserve || false)
-            break
-          }
-          case 'tempo': {
-            if (data.tempo === undefined) throw new Error('Missing tempo key')
-            const value = parseFloat(data.tempo)
-            if (value === Number.NaN) throw new Error(`Invalid tempo key ${data.tempo}`)
-            this.timeRatio = ((100 / value) / 100) || 1
-            this.playEndPosition = this.bufferEndPosition * this.timeRatio
-            this.api?.setTimeRatio(this.timeRatio)
             break
           }
           case 'close': {
@@ -163,17 +167,29 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
 
   private reInit() {
     if (this.module && this.channelCount > 0) {
-      if (DEBUG) console.info(`[rubberband-realtime-processor] reInit() ${this.buffer ? 'in buffered mode' : 'in live mode'} with ${this.channelCount} channels, sampleRate=${this.sampleRate}, timeRatio=${this.timeRatio}, pitchScale=${this.pitchScale}`)
+      if (DEBUG) console.info(`[rubberband-realtime-processor] reInit() ${this.buffer ? 'in buffered mode' : 'in live mode'} with ${this.channelCount} channels, sampleRate=${this.sampleRate}, playbackRate=${this.playbackRate}, detune=${this.detune}`)
 
-      this.inputBuffer = new Float32ChannelTransport(this.module, 8196, this.channelCount)
+      this.inputBuffer = new Float32ChannelTransport(this.module, MAXIMUM_INPUT_SIZE, this.channelCount)
       this.outputBuffer = new Float32ChannelTransport(this.module, RENDER_QUANTUM_FRAMES, this.channelCount)
 
       this.api = new this.module.RealtimeRubberBand(
         this.sampleRate,
         this.channelCount
       )
-      this.api.setPitchScale(this.pitchScale)
-      this.api.setTimeRatio(this.timeRatio)
+
+      if (this.playbackRate !== 1) {
+        const timeRatio = ((100 / this.playbackRate) / 100) || 1
+        this.api.setTimeRatio(timeRatio)
+      }else {
+        this.api.setTimeRatio(1)
+      }
+      if (this.detune !== 0) {
+        const pitchScale = Math.pow(2.0, this.detune / 1200.0) || 1
+        this.api.setPitchScale(pitchScale)
+        console.log("Set on init pitchscale to " + pitchScale)
+      } else {
+        this.api.setPitchScale(1)
+      }
       this.api.preserveFormantShave(!!this.preserve)
 
       // Push start pad
@@ -186,6 +202,32 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
       this.inputBuffer = undefined
       this.outputBuffer = undefined
       this.api = undefined
+    }
+  }
+
+  private setDetune(value: number) {
+    if (this.detune !== value) {
+      if (DEBUG) console.log(`[rubberband-realtime-processor] Set detune from ${this.detune} to ${value}`)
+      this.detune = value
+      if(this.api) {
+        const pitchScale = Math.pow(2.0, this.detune / 1200.0) || 1
+        this.api.setPitchScale(pitchScale)
+        console.log("or pitchscale = " + pitchScale)
+        console.log("is now = " + this.api.getPitchScale())
+      }
+    }
+  }
+
+  private setPlaybackRate(value: number) {
+    if (this.playbackRate !== value) {
+      if (DEBUG) console.log(`[rubberband-realtime-processor] Set playbackRate from ${this.playbackRate} to ${value}`)
+      this.playbackRate = value
+      const timeRatio = ((100 / this.playbackRate) / 100) || 1
+      this.playEndPosition = this.bufferEndPosition * timeRatio
+      if(this.api) {
+        this.api.setTimeRatio(timeRatio)
+        console.log("is now = " + this.api.getTimeRatio())
+      }
     }
   }
 
@@ -220,7 +262,11 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
     }
   }
 
-  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
+    // Handle parameters
+    this.setDetune(parameters["detune"][0])
+    this.setPlaybackRate(parameters["playbackRate"][0])
+
     if (this.buffer) {
       // Buffered chain
       if (this.playing) {
@@ -228,21 +274,27 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
           // Loop?
           if (this.loop && this.loopEnd) {
             if (this.playPosition >= this.loopEnd) {
+
               // Go back to loopStart
               if (DEBUG) console.log(`[rubberband-realtime-processor] Set play mark to loopStart@${this.loopStart}, reached ${this.loopEnd / this.sampleRate}s`)
               this.playPosition = this.loopStart
             }
           }
 
+
           if (this.api && this.outputBuffer) {
-            if (this.api.available() > 0) {
-              /*
-              if (this.startDelay > 0) {
-                const actual = this.api.pull(this.outputBuffer.getPointer(), this.startDelay)
-                if (DEBUG) console.log(`[rubberband-realtime-processor] Skipped ${actual} of ${this.startDelay} start delay samples.`)
+            // NEW
+            if (this.startDelay > 0) {
+              const available = this.api.available()
+              if (available > 0) {
+                const actual = this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
+                if (DEBUG) console.log(`[rubberband-realtime-processor] Skipped ${actual} (was ${available} available) of ${this.startDelay} start delay samples`)
                 this.startDelay -= actual
               }
+            }
 
+            /*
+            if (this.api.available() > 0) {
               if (this.startDelay <= 0 && this.startDelay === -1) {
                 const available = this.api.available()
                 if (available >= RENDER_QUANTUM_FRAMES) {
@@ -250,25 +302,43 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
                   this.outputBuffer.read(outputs[0])
                   this.playPosition += actual
 
-                  //TODO: REMOVE THE FOLLOWING
-                  // Compare
-                  if (this.pitchScale === 0 && this.timeRatio === 1) {
-                    // Compare
-                    for (let c = 0; c < this.channelCount; ++c) {
-                      for (let s = 0; s < actual; ++s) {
-                        if (this.buffer[c][this.outputPos + s] !== outputs[0][c][s]) {
-                          console.error(`this.buffer[${c}][${this.outputPos + s}] = ${this.buffer[c][this.outputPos + s]} !== outputs[0][${c}][${s}] = ${outputs[0][c][s]}`)
-                        }
-                      }
-                    }
-                    this.outputPos += actual
-                  }
+
 
                 } else {
                   this.quality.underruns++
                 }
               }
-               */
+            }
+            */
+            if (this.startDelay <= 0) {
+              const available = this.api.available()
+              if (available >= RENDER_QUANTUM_FRAMES) {
+                const actual = this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
+                //this.outputBuffer.read(outputs[0])
+                this.outputBuffer.read(outputs[0])
+                this.playPosition += actual
+
+                /*
+                //TODO: REMOVE THE FOLLOWING
+                // Compare
+                if (this.buffer && this.pitchScale === 1 && this.timeRatio === 1) {
+                  // Compare
+                  for (let c = 0; c < this.channelCount; ++c) {
+                    for (let s = 0; s < actual; ++s) {
+                      const written = this.buffer[c][this.outputPos + s]
+                      console.log(outputs[0])
+                      const read = outputs[0][c][s]
+                      if (written !== read) {
+                        console.error(`this.buffer[${c}][${this.outputPos + s}] = ${this.buffer[c][this.outputPos + s]} !== outputs[0][${c}][${s}] = ${outputs[0][c][s]}`)
+                      }
+                    }
+                  }
+                  this.outputPos += actual
+                }*/
+
+              } else {
+                this.quality.underruns++
+              }
             }
           }
         } else {
@@ -301,7 +371,9 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
         if (this.outputBuffer) {
           if (this.api?.available() >= RENDER_QUANTUM_FRAMES) {
             this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
-            this.outputBuffer.read(outputs[0])
+            //const output = new Float32Array(this.channelCount)
+            outputs[0] = this.outputBuffer.read()
+            //outputs[0] = output
           }
         }
       }

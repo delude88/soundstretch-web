@@ -36,7 +36,7 @@
   "scripts": {
     "dev": "webpack --mode=development --watch",
     "build": "npm run build:wasm && npm run build:worklet && npm run build:web",
-    "build:worklet": "tsc -b src/worklet/tsconfig.json && webpack --mode=production && cp public/* app/public/",
+    "build:worklet": "tsc -b src/worklet/tsconfig.json && webpack --mode=production",
     "build:wasm": "cd wasm && bash ./build.sh && cd .. && cp wasm/build/*.js public/",
     "build:web": "tsc -b src/web/tsconfig.cjs.json src/web/tsconfig.esm.json src/web/tsconfig.esm5.json src/web/tsconfig.types.json"
   },
@@ -69,6 +69,7 @@
     "@types/audioworklet": "^0.0.34",
     "@types/emscripten": "^1.39.6",
     "babel-loader": "^8.2.5",
+    "copy-webpack-plugin": "^11.0.0",
     "tone": "^14.7.77",
     "tslib": "^2.4.0",
     "typescript": "^4.8.4",

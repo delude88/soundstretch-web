@@ -29,6 +29,12 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
     }
   }
 
+  // PLAYBACK RATE
+  node.playbackRate = node.parameters.get("playbackRate")
+
+  // DETUNE
+  node.detune = node.parameters.get("detune")
+
   // START
   node.start = (when: number = 0, offset: number = 0, duration?: number): void => {
     console.info('[RubberBandRealtimeNode] start')
@@ -48,107 +54,6 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
     }
   }
 
-  // PLAYBACK RATE
-  const _playbackRateChangeTasks: NodeJS.Timeout[] = []
-  const _playbackRateCancelTasks: NodeJS.Timeout[] = []
-  let _playbackRate = 1
-  node.playbackRate = {
-    automationRate: 'k-rate',
-    defaultValue: 1,
-    maxValue: 3.4028234663852886e+38,
-    minValue: 0.00000000001,
-    value: _playbackRate,
-    cancelAndHoldAtTime: function(cancelTime: number): AudioParam {
-      throw new Error('Function not implemented.')
-    },
-    cancelScheduledValues: function(cancelTime: number): AudioParam {
-      if (cancelTime === 0 || cancelTime < workletNode.context.currentTime) {
-        _playbackRateChangeTasks.map(task => clearTimeout(task))
-      } else {
-        const timeout = (cancelTime - workletNode.context.currentTime) * 1000
-        _playbackRateCancelTasks.push(setTimeout(() => {
-          _playbackRateChangeTasks.map(task => clearTimeout(task))
-        }, timeout))
-      }
-      return this
-    },
-    exponentialRampToValueAtTime: function(value: number, endTime: number): AudioParam {
-      throw new Error('Function not implemented.')
-    },
-    linearRampToValueAtTime: function(value: number, endTime: number): AudioParam {
-      throw new Error('Function not implemented.')
-    },
-    setTargetAtTime: function(target: number, startTime: number, timeConstant: number): AudioParam {
-      throw new Error('Function not implemented.')
-    },
-    setValueAtTime: function(value: number, startTime: number): AudioParam {
-      if (startTime === 0 || startTime < workletNode.context.currentTime) {
-        _playbackRate = value
-        workletNode.port.postMessage({ event: 'tempo', tempo: value })
-      } else {
-        const timeout = (startTime - workletNode.context.currentTime) * 1000
-        _playbackRateChangeTasks.push(setTimeout(() => {
-          _playbackRate = value
-          workletNode.port.postMessage({ event: 'tempo', tempo: value })
-        }, timeout))
-      }
-      return this
-    },
-    setValueCurveAtTime: function(values: Float32Array | number[], startTime: number, duration: number): AudioParam {
-      throw new Error('Function not implemented.')
-    }
-  } as AudioParam
-
-  // DETUNE
-  const _detuneChangeTasks: NodeJS.Timeout[] = []
-  const _detuneCancelTasks: NodeJS.Timeout[] = []
-  let _detuneValue = 0
-  node.detune = {
-    automationRate: 'k-rate',
-    defaultValue: 0,
-    maxValue: 3.4028234663852886e+38,
-    minValue: -3.4028234663852886e+38,
-    value: _detuneValue,
-    cancelAndHoldAtTime: function(cancelTime: number): AudioParam {
-      throw new Error('Function not implemented.')
-    },
-    cancelScheduledValues: function(cancelTime: number): AudioParam {
-      if (cancelTime === 0 || cancelTime < workletNode.context.currentTime) {
-        _detuneChangeTasks.map(task => clearTimeout(task))
-      } else {
-        const timeout = (cancelTime - workletNode.context.currentTime) * 1000
-        _detuneCancelTasks.push(setTimeout(() => {
-          _detuneChangeTasks.map(task => clearTimeout(task))
-        }, timeout))
-      }
-      return this
-    },
-    exponentialRampToValueAtTime: function(value: number, endTime: number): AudioParam {
-      throw new Error('Function not implemented.')
-    },
-    linearRampToValueAtTime: function(value: number, endTime: number): AudioParam {
-      throw new Error('Function not implemented.')
-    },
-    setTargetAtTime: function(target: number, startTime: number, timeConstant: number): AudioParam {
-      throw new Error('Function not implemented.')
-    },
-    setValueAtTime: function(value: number, startTime: number): AudioParam {
-      if (startTime === 0 || startTime < workletNode.context.currentTime) {
-        _detuneValue = value
-        workletNode.port.postMessage({ event: 'pitch', pitch: value })
-      } else {
-        const timeout = (startTime - workletNode.context.currentTime) * 1000
-        _detuneChangeTasks.push(setTimeout(() => {
-          _detuneValue = value
-          workletNode.port.postMessage({ event: 'pitch', pitch: value })
-        }, timeout))
-      }
-      return this
-    },
-    setValueCurveAtTime: function(values: Float32Array | number[], startTime: number, duration: number): AudioParam {
-      throw new Error('Function not implemented.')
-    }
-  } as AudioParam
 
   // STOP
   node.stop = (when: number = 0) => {
@@ -157,10 +62,6 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
     }
     const _stop = () => {
       clearTimeout(_startTimeout)
-      _playbackRateChangeTasks.map(task => clearTimeout(task))
-      _playbackRateCancelTasks.map(task => clearTimeout(task))
-      _detuneChangeTasks.map(task => clearTimeout(task))
-      _detuneCancelTasks.map(task => clearTimeout(task))
       _startTimeout = undefined
       _stopTimeout = undefined
       workletNode.port.postMessage({ event: 'stop' })

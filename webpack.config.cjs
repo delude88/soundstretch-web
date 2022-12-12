@@ -1,4 +1,5 @@
 const path = require('path');
+const CopyPlugin = require('copy-webpack-plugin')
 
 const worklets = [
   'src/worklet/soundstretch-processor.ts',
@@ -37,7 +38,19 @@ const bundle = (worklet) => {
       filename: `${getFilename(worklet)}.js`,
       path: path.resolve(__dirname, 'public'),
       publicPath: '',
-    }
+    },
+    plugins: [
+      new CopyPlugin({
+        patterns: [
+          {
+            from: "public/*.js",
+            to({ context, absoluteFilename }) {
+              return "../app/public/[name][ext]";
+            },
+          },
+        ],
+      }),
+    ]
   }
 }
 
