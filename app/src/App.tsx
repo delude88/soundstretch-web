@@ -8,7 +8,7 @@ import { IoPlayOutline, IoStopOutline } from 'react-icons/io5'
 
 function App() {
   const audioContext = useMemo(() => new AudioContext(), [])
-  const { audioBuffer, handleFileInputChange } = useAudioFileChooser(audioContext, `${process.env.PUBLIC_URL}/song.mp3`)
+  const { audioBuffer, handleFileInputChange } = useAudioFileChooser(audioContext, `${process.env.PUBLIC_URL}/stereo.mp3`)
   const {
     method,
     engine,

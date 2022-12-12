@@ -30,7 +30,8 @@ RealtimeRubberBand::RealtimeRubberBand(size_t sample_rate, size_t channel_count,
 }
 
 RealtimeRubberBand::~RealtimeRubberBand() {
-    delete[] _stretcher;
+    delete _stretcher;
+    delete[] _scratch;
 #if defined(USE_QUEUE)
     delete[] _queue;
 #else

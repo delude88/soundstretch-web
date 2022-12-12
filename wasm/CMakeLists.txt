@@ -15,11 +15,6 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPTIMIZATION_FLAGS}")
 
 add_subdirectory(lib/soundtouch)
 
-# Common library providing simplified soundtouch classes
-add_library(ChannelTransport
-        src/ChannelTransport.h
-        src/ChannelTransport.cpp)
-
 add_library(soundtouchclasses
         src/SoundStretch.cpp
         src/SoundStretch.h
@@ -61,9 +56,24 @@ add_executable(demo
         src/demo.cc
         )
 
+target_compile_definitions(
+        demo
+        PUBLIC
+        HAVE_VDSP)
+
+if (APPLE)
+    message(INFO "Using VDSP on macOS")
+    target_link_libraries(
+            demo
+            PUBLIC
+            "-framework Accelerate"
+    )
+endif (APPLE)
+
 target_link_libraries(demo
         PUBLIC
-        stretcher
+        soundtouchclasses
+        rubberbandclasses
         )
 
 # Build final wasm executable
