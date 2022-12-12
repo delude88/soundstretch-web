@@ -7,8 +7,27 @@ const MAX_TEMPO = 10
 const PRE_BUFFER_FACTOR = 32
 
 class SoundStretchProcessor extends AudioWorkletProcessor {
-  private pitch: number = 1
-  private tempo: number = 1
+  static get parameterDescriptors() {
+    return [
+      {
+        name: 'detune',
+        defaultValue: 0,
+        minValue: -3.4028234663852886e+38,
+        maxValue: 3.4028234663852886e+38,
+        automationRate: 'k-rate'
+      },
+      {
+        name: 'playbackRate',
+        defaultValue: 1,
+        minValue: 0.00000000001,
+        maxValue: 3.4028234663852886e+38,
+        automationRate: 'k-rate'
+      }
+    ]
+  }
+
+  private detune: number = 0
+  private playbackRate: number = 1
   private rate: number = 1
   private sampleRate: number = 1
   private channelCount: number = 1
@@ -48,8 +67,8 @@ class SoundStretchProcessor extends AudioWorkletProcessor {
             this.channelCount = this.buffer.length
             this.bufferPosition = data.offset || 0
             this.bufferEndPosition = this.buffer.length > 0 ? this.buffer[0].length : 0
-            this.playPosition = Math.round(this.bufferPosition / (this.tempo * this.rate))
-            this.playEndPosition = Math.round(this.bufferEndPosition / (this.tempo * this.rate))
+            this.playPosition = Math.round(this.bufferPosition / (this.playbackRate * this.rate))
+            this.playEndPosition = Math.round(this.bufferEndPosition / (this.playbackRate * this.rate))
             this.reInit()
             break
           }
@@ -63,6 +82,7 @@ class SoundStretchProcessor extends AudioWorkletProcessor {
             this.playing = false
             break
           }
+          /*
           case 'pitch': {
             if (data.pitch === undefined) throw new Error('Missing pitch key')
             const value = parseFloat(data.pitch)
@@ -74,21 +94,21 @@ class SoundStretchProcessor extends AudioWorkletProcessor {
             this.resetPlayback(currentBufferPosition)
             break
           }
-          case 'rate': {
-            if (data.rate === undefined) throw new Error('Missing rate key')
-            if (data.rate <= 0) throw new Error(`Invalid rate key ${data.rate}`)
-            const currentBufferPosition = Math.round(this.playPosition * this.tempo * this.rate)
-            this.rate = data.rate
-            this.api?.setRate(this.pitch)
-            this.resetPlayback(currentBufferPosition)
-            break
-          }
           case 'tempo': {
             if (data.tempo === undefined) throw new Error('Missing tempo key')
             if (data.tempo <= 0) throw new Error(`Invalid tempo key ${data.tempo}`)
             const currentBufferPosition = Math.round(this.playPosition * this.tempo * this.rate)
             this.tempo = data.tempo
             this.api?.setTempo(this.tempo)
+            this.resetPlayback(currentBufferPosition)
+            break
+          }*/
+          case 'rate': {
+            if (data.rate === undefined) throw new Error('Missing rate key')
+            if (data.rate <= 0) throw new Error(`Invalid rate key ${data.rate}`)
+            const currentBufferPosition = Math.round(this.playPosition * this.playbackRate * this.rate)
+            this.rate = data.rate
+            this.api?.setRate(this.rate)
             this.resetPlayback(currentBufferPosition)
             break
           }
@@ -105,9 +125,25 @@ class SoundStretchProcessor extends AudioWorkletProcessor {
     })
   }
 
+  private setDetune(value: number) {
+    if (this.detune !== value) {
+      this.detune = value
+      this.api?.setPitchSemiTones(this.detune / 100)
+    }
+  }
+
+  private setPlaybackRate(value: number) {
+    if (this.playbackRate !== value) {
+      const currentBufferPosition = Math.round(this.playPosition * this.playbackRate * this.rate)
+      this.playbackRate = value
+      this.api?.setTempo(this.playbackRate)
+      this.resetPlayback(currentBufferPosition)
+    }
+  }
+
   requiredSamples(): number {
-    if (this.tempo > 1) {
-      return RENDER_QUANTUM_FRAMES * this.tempo
+    if (this.playbackRate > 1) {
+      return RENDER_QUANTUM_FRAMES * this.playbackRate
     }
     return RENDER_QUANTUM_FRAMES
   }
@@ -128,8 +164,8 @@ class SoundStretchProcessor extends AudioWorkletProcessor {
     this.printCurrentPlayMark('BEFORE')
 
     this.bufferPosition = bufferPositon
-    this.playPosition = Math.round(this.bufferPosition / (this.tempo * this.rate))
-    this.playEndPosition = Math.round(this.bufferEndPosition / (this.tempo * this.rate))
+    this.playPosition = Math.round(this.bufferPosition / (this.playbackRate * this.rate))
+    this.playEndPosition = Math.round(this.bufferEndPosition / (this.playbackRate * this.rate))
 
     this.printCurrentPlayMark('AFTER')
 
@@ -138,7 +174,9 @@ class SoundStretchProcessor extends AudioWorkletProcessor {
       if (bufferSize > 0) {
         do {
           this.inputBuffer.write(
-            this.buffer.map(channelBuffer => channelBuffer.subarray(this.bufferPosition))
+            this.buffer.map(channelBuffer => channelBuffer.subarray(this.bufferPosition)),
+            0,
+            RENDER_QUANTUM_FRAMES
           )
           this.api.push(this.inputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
           this.bufferPosition += RENDER_QUANTUM_FRAMES
@@ -164,7 +202,10 @@ class SoundStretchProcessor extends AudioWorkletProcessor {
     this.running = false
   }
 
-  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
+    this.setDetune(parameters['detune'][0])
+    this.setPlaybackRate(parameters['playbackRate'][0])
+
     if (this.api && this.inputBuffer && this.outputBuffer) {
       if (this.buffer) {
         // BUFFER MODE
@@ -188,7 +229,9 @@ class SoundStretchProcessor extends AudioWorkletProcessor {
             // Read
             if (this.api.available() >= RENDER_QUANTUM_FRAMES) {
               const actual = this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
-              this.outputBuffer.read(outputs[0])
+              for (const output of outputs) {
+                this.outputBuffer.read(output)
+              }
               this.playPosition += actual
 
             } else {

@@ -26,6 +26,19 @@ function App() {
   const [pitch, setPitch] = useState<number>(0)
 
   useEffect(() => {
+    if(audioContext && audioBuffer) {
+      const first = new AudioBufferSourceNode(audioContext)
+      first.buffer = audioBuffer
+      console.log("AudioBufferSourceNode", first, first.numberOfOutputs)
+      first.connect(audioContext.destination)
+      //first.start()
+      return () => {
+        //first.stop()
+      }
+    }
+  }, [audioContext, audioBuffer])
+
+  useEffect(() => {
     setTempoInPlayer(tempo)
   }, [setTempoInPlayer, tempo])
 

@@ -34,17 +34,12 @@ class Float32ChannelTransport implements ChannelTransport<Float32Array[]> {
 
   write(input: Float32Array[], offset: number = 0, len: number = 0): void {
     if (offset > this._sampleSize) throw new Error('Invalid offset')
-    if (input.length > 0 && input[0].length > 0) {
+    const channelCount = Math.min(input.length, this._channelCount)
+    for (let c = 0; c < channelCount; ++c) {
+      const length = len || Math.min(input[c].length, this._sampleSize - offset)
       const output = this.current
-      const channelCount = Math.min(input.length, this._channelCount)
-      for (let c = 0; c < channelCount; ++c) {
-        const length = len || Math.min(input[c].length, this._sampleSize - offset)
-        // Extract channel out of input
-        const channel = input[c].subarray(0, length)
-        // Write the channel into the output
-        const start = c * this._sampleSize
-        output.set(channel, start + offset)
-      }
+      const channel = input[c].subarray(0, length)
+      output.set(channel, c * len + offset)
     }
   }
 
@@ -58,11 +53,8 @@ class Float32ChannelTransport implements ChannelTransport<Float32Array[]> {
     }
     if (output.length > 0) {
       const input = this.current
-      //const channelCount = Math.min(output.length, this._channelCount)
-      for (let c = 0; c < this._channelCount; ++c) {
-        if(!output[c]) {
-          output[c] = new Float32Array(this._sampleSize)
-        }
+      const channelCount = Math.min(output.length, this._channelCount)
+      for (let c = 0; c < channelCount; ++c) {
         const start = c * this._sampleSize
         const length = len || Math.min(output[c].length - offset, this._sampleSize)
         const end = start + length

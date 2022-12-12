@@ -30,10 +30,12 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
   }
 
   // PLAYBACK RATE
-  node.playbackRate = node.parameters.get("playbackRate")
+  node.playbackRate = node.parameters.get('playbackRate')
+
 
   // DETUNE
-  node.detune = node.parameters.get("detune")
+  node.detune = node.parameters.get('detune')
+
 
   // START
   node.start = (when: number = 0, offset: number = 0, duration?: number): void => {
@@ -80,6 +82,7 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
   }
 
   // Buffer setter/getter
+
   Object.defineProperty(node, 'buffer', {
     get() {
       return _buffer
@@ -143,6 +146,24 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
     }
   })
 
+
+
+  Object.defineProperty(node, 'outputChannelCount', {
+    get() {
+      if(_buffer) {
+        return _buffer.numberOfChannels * workletNode.numberOfOutputs;
+      }
+      return [0];
+    }
+  })
+
+  Object.defineProperty(node, 'numberOfOutputs', {
+    get() {
+      console.log("HEY HEY WICKIE")
+      return _buffer?.numberOfChannels || 0
+    }
+  })
+
   // Callbacks
   workletNode.port.onmessage = ({ data }) => {
     if (typeof data === 'object' && data['event']) {
@@ -160,4 +181,4 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
   return node as AudioBufferSourceNode
 }
 
-export {convertToAudioBufferSourceNode}
+export { convertToAudioBufferSourceNode }

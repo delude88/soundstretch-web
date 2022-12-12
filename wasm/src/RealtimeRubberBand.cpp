@@ -125,11 +125,13 @@ size_t RealtimeRubberBand::pull(uintptr_t output_ptr, size_t output_size) {
 #if defined(USE_QUEUE)
     const auto actual = std::min(output_size, _queue[0]->size());
     for (size_t c = 0; c < getChannelCount(); ++c) {
+      float sum = 0;
       for (size_t s = 0; s < actual; ++s) {
         output[s + c * output_size] = _queue[c]->front();
+        sum += output[s + c * output_size];
         _queue[c]->pop();
       }
-    }
+     }
 #else
     const auto actual = std::min(output_size, (size_t) _buffer[0]->getReadSpace());
     for (size_t c = 0; c < getChannelCount(); ++c) {

@@ -4,7 +4,7 @@ import { Float32ChannelTransport } from '../web/Float32ChannelTransport'
 
 const MAXIMUM_INPUT_SIZE = 8196
 const RENDER_QUANTUM_FRAMES = 128
-const DEBUG = true
+const DEBUG = false
 
 class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
@@ -180,15 +180,10 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
       if (this.playbackRate !== 1) {
         const timeRatio = ((100 / this.playbackRate) / 100) || 1
         this.api.setTimeRatio(timeRatio)
-      }else {
-        this.api.setTimeRatio(1)
       }
       if (this.detune !== 0) {
         const pitchScale = Math.pow(2.0, this.detune / 1200.0) || 1
         this.api.setPitchScale(pitchScale)
-        console.log("Set on init pitchscale to " + pitchScale)
-      } else {
-        this.api.setPitchScale(1)
       }
       this.api.preserveFormantShave(!!this.preserve)
 
@@ -209,11 +204,9 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
     if (this.detune !== value) {
       if (DEBUG) console.log(`[rubberband-realtime-processor] Set detune from ${this.detune} to ${value}`)
       this.detune = value
-      if(this.api) {
+      if (this.api) {
         const pitchScale = Math.pow(2.0, this.detune / 1200.0) || 1
         this.api.setPitchScale(pitchScale)
-        console.log("or pitchscale = " + pitchScale)
-        console.log("is now = " + this.api.getPitchScale())
       }
     }
   }
@@ -224,9 +217,8 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
       this.playbackRate = value
       const timeRatio = ((100 / this.playbackRate) / 100) || 1
       this.playEndPosition = this.bufferEndPosition * timeRatio
-      if(this.api) {
+      if (this.api) {
         this.api.setTimeRatio(timeRatio)
-        console.log("is now = " + this.api.getTimeRatio())
       }
     }
   }
@@ -249,7 +241,9 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
       if (required > 0) {
         const actual = Math.min(this.bufferEndPosition - this.bufferPosition, required)
         this.inputBuffer.write(
-          this.buffer.map(channelBuffer => channelBuffer.subarray(this.bufferPosition))
+          this.buffer.map(channelBuffer => channelBuffer.subarray(this.bufferPosition)),
+          0,
+          actual
         )
         this.api.push(this.inputBuffer.getPointer(), actual)
         this.bufferPosition += actual
@@ -263,9 +257,8 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
   }
 
   process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
-    // Handle parameters
-    this.setDetune(parameters["detune"][0])
-    this.setPlaybackRate(parameters["playbackRate"][0])
+    this.setDetune(parameters['detune'][0])
+    this.setPlaybackRate(parameters['playbackRate'][0])
 
     if (this.buffer) {
       // Buffered chain
@@ -274,16 +267,13 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
           // Loop?
           if (this.loop && this.loopEnd) {
             if (this.playPosition >= this.loopEnd) {
-
               // Go back to loopStart
               if (DEBUG) console.log(`[rubberband-realtime-processor] Set play mark to loopStart@${this.loopStart}, reached ${this.loopEnd / this.sampleRate}s`)
               this.playPosition = this.loopStart
             }
           }
 
-
           if (this.api && this.outputBuffer) {
-            // NEW
             if (this.startDelay > 0) {
               const available = this.api.available()
               if (available > 0) {
@@ -293,49 +283,14 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
               }
             }
 
-            /*
-            if (this.api.available() > 0) {
-              if (this.startDelay <= 0 && this.startDelay === -1) {
-                const available = this.api.available()
-                if (available >= RENDER_QUANTUM_FRAMES) {
-                  const actual = this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
-                  this.outputBuffer.read(outputs[0])
-                  this.playPosition += actual
-
-
-
-                } else {
-                  this.quality.underruns++
-                }
-              }
-            }
-            */
             if (this.startDelay <= 0) {
               const available = this.api.available()
               if (available >= RENDER_QUANTUM_FRAMES) {
                 const actual = this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
-                //this.outputBuffer.read(outputs[0])
-                this.outputBuffer.read(outputs[0])
+                for (const output of outputs) {
+                  this.outputBuffer.read(output)
+                }
                 this.playPosition += actual
-
-                /*
-                //TODO: REMOVE THE FOLLOWING
-                // Compare
-                if (this.buffer && this.pitchScale === 1 && this.timeRatio === 1) {
-                  // Compare
-                  for (let c = 0; c < this.channelCount; ++c) {
-                    for (let s = 0; s < actual; ++s) {
-                      const written = this.buffer[c][this.outputPos + s]
-                      console.log(outputs[0])
-                      const read = outputs[0][c][s]
-                      if (written !== read) {
-                        console.error(`this.buffer[${c}][${this.outputPos + s}] = ${this.buffer[c][this.outputPos + s]} !== outputs[0][${c}][${s}] = ${outputs[0][c][s]}`)
-                      }
-                    }
-                  }
-                  this.outputPos += actual
-                }*/
-
               } else {
                 this.quality.underruns++
               }
@@ -371,9 +326,9 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
         if (this.outputBuffer) {
           if (this.api?.available() >= RENDER_QUANTUM_FRAMES) {
             this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
-            //const output = new Float32Array(this.channelCount)
-            outputs[0] = this.outputBuffer.read()
-            //outputs[0] = output
+            for (const output of outputs) {
+              this.outputBuffer.read(output)
+            }
           }
         }
       }
