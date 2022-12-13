@@ -57,6 +57,7 @@ void RealtimeRubberBand::setTimeRatio(double time_ratio) {
 
 void RealtimeRubberBand::push(uintptr_t input_ptr, size_t input_size) {
     auto input = reinterpret_cast<const float *const>(input_ptr);
+
     for (size_t c = 0; c < getChannelCount(); ++c) {
         for (size_t s = 0; s < input_size; ++s) {
             _scratch[c][s] = input[s + c * input_size];
@@ -125,10 +126,8 @@ size_t RealtimeRubberBand::pull(uintptr_t output_ptr, size_t output_size) {
 #if defined(USE_QUEUE)
     const auto actual = std::min(output_size, _queue[0]->size());
     for (size_t c = 0; c < getChannelCount(); ++c) {
-      float sum = 0;
       for (size_t s = 0; s < actual; ++s) {
         output[s + c * output_size] = _queue[c]->front();
-        sum += output[s + c * output_size];
         _queue[c]->pop();
       }
      }

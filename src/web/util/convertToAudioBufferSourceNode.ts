@@ -1,7 +1,7 @@
 import { cloneArrayBuffer } from './cloneArrayBuffer'
 
 const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBufferSourceNode => {
-  const node = workletNode as any
+  let node = workletNode as any
   let _buffer: AudioBuffer | null = null
   let _started: boolean = false
   let _startTimeout: NodeJS.Timeout | undefined = undefined
@@ -10,7 +10,6 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
   let _loopStart: number = 0
   let _loopEnd: number = 0
   const _start = (offset: number = 0, duration?: number) => {
-    console.info('[RubberBandRealtimeNode] _start')
     if (_buffer) {
       // offset is in seconds, convert it, 1s = sampleRate, 2s = 2* sampleRate
       const sampleRate = _buffer?.sampleRate
@@ -24,7 +23,6 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
         loopStart: _loopStart,
         loopEnd: _loopEnd
       }
-      console.info('[RubberBandRealtimeNode] _start, msg=', msg)
       workletNode.port.postMessage(msg)
     }
   }
@@ -39,7 +37,6 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
 
   // START
   node.start = (when: number = 0, offset: number = 0, duration?: number): void => {
-    console.info('[RubberBandRealtimeNode] start')
     if (_started) {
       throw new DOMException('Already started', 'InvalidStateError')
     }
@@ -124,7 +121,6 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
       return _loopStart
     },
     set(seconds: number) {
-      console.log('[RubberBandRealtimeNode] set loopStart')
       _loopStart = seconds
       workletNode.port.postMessage({
         event: 'loopStart',
@@ -137,7 +133,6 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
       return _loopEnd
     },
     set(seconds: number) {
-      console.log('[RubberBandRealtimeNode] set loopEnd')
       _loopEnd = seconds
       workletNode.port.postMessage({
         event: 'loopEnd',
@@ -146,8 +141,7 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
     }
   })
 
-
-
+  /*
   Object.defineProperty(node, 'outputChannelCount', {
     get() {
       if(_buffer) {
@@ -156,13 +150,7 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
       return [0];
     }
   })
-
-  Object.defineProperty(node, 'numberOfOutputs', {
-    get() {
-      console.log("HEY HEY WICKIE")
-      return _buffer?.numberOfChannels || 0
-    }
-  })
+  */
 
   // Callbacks
   workletNode.port.onmessage = ({ data }) => {

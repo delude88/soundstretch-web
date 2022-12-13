@@ -38,8 +38,7 @@ class Float32ChannelTransport implements ChannelTransport<Float32Array[]> {
     for (let c = 0; c < channelCount; ++c) {
       const length = len || Math.min(input[c].length, this._sampleSize - offset)
       const output = this.current
-      const channel = input[c].subarray(0, length)
-      output.set(channel, c * len + offset)
+      output.set(input[c].subarray(0, length), c * length)
     }
   }
 
@@ -53,13 +52,11 @@ class Float32ChannelTransport implements ChannelTransport<Float32Array[]> {
     }
     if (output.length > 0) {
       const input = this.current
-      const channelCount = Math.min(output.length, this._channelCount)
-      for (let c = 0; c < channelCount; ++c) {
-        const start = c * this._sampleSize
+      for (let c = 0; c < output.length; ++c) {
+        const start = Math.min(c, this._channelCount - 1) * this._sampleSize
         const length = len || Math.min(output[c].length - offset, this._sampleSize)
         const end = start + length
-        const channel = input.subarray(start, end)
-        output[c].set(channel, offset)
+        output[c].set(input.subarray(start, end), offset)
       }
     }
     return output

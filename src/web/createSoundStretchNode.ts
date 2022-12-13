@@ -2,7 +2,11 @@ import { SoundStretchNode } from './SoundStretchNode'
 import { convertToAudioBufferSourceNode } from './util/convertToAudioBufferSourceNode'
 
 const createNode = (context: BaseAudioContext, options?: AudioWorkletNodeOptions): SoundStretchNode => {
-  return convertToAudioBufferSourceNode(new AudioWorkletNode(context, 'soundstretch-processor', options)) as SoundStretchNode
+  return convertToAudioBufferSourceNode(new AudioWorkletNode(context, 'soundstretch-processor', {
+    numberOfOutputs: 1,
+    outputChannelCount: [2],
+    ...options,
+  })) as SoundStretchNode
 }
 
 async function createSoundStretchNode(

@@ -2,8 +2,12 @@ import { SoundStretchNode } from './SoundStretchNode'
 import * as Tone from 'tone'
 import { convertToAudioBufferSourceNode } from './util/convertToAudioBufferSourceNode'
 
-const createToneNode = (): SoundStretchNode => {
-  const workletNode = Tone.context.createAudioWorkletNode('soundstretch-processor')
+const createToneNode = (options?: AudioWorkletNodeOptions): SoundStretchNode => {
+  const workletNode = Tone.context.createAudioWorkletNode('soundstretch-processor', {
+    numberOfOutputs: 1,
+    outputChannelCount: [2],
+    ...options,
+  })
   const node = convertToAudioBufferSourceNode(workletNode) as any
   node.preserveFormantShave = (enabled: boolean) => {
     workletNode.port.postMessage({ event: 'preserve', preserve: enabled })
@@ -12,14 +16,15 @@ const createToneNode = (): SoundStretchNode => {
 }
 
 async function createSoundStretchNodeForTone(
-  url: string
+  url: string,
+  options?: AudioWorkletNodeOptions
 ): Promise<SoundStretchNode> {
   // ensure audioWorklet has been loaded
   try {
-    return createToneNode()
+    return createToneNode(options)
   } catch (err) {
     await Tone.context.addAudioWorkletModule(url, 'soundstretch-processor')
-    return createToneNode()
+    return createToneNode(options)
   }
 }
 

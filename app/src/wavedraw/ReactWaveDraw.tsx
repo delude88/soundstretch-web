@@ -15,7 +15,9 @@ const ReactWaveDraw = ({ audioContext, audioBuffer, playbackRate, detune }: { au
       const ws = new WaveDraw({
         container,
         audioContext,
-        createBuffer: (ctx) => createRubberBandNode(ctx, `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`),
+        createBuffer: (ctx) => createRubberBandNode(ctx, `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`, {
+          //outputChannelCount: [2]
+        }),
       })
       setWaveSurfer(ws)
       return () => {
