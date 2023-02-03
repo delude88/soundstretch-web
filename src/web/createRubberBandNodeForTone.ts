@@ -9,6 +9,11 @@ const createToneNode = (options?: AudioWorkletNodeOptions): RubberBandRealtimeNo
     ...options,
   })
   const node = convertToAudioBufferSourceNode(workletNode) as any
+  /*node.connect = (destinationNode: AudioNode, output?: number, input?: number) : AudioNode => {
+    console.info("Using tone for connect")
+    Tone.connect(node, destinationNode, output, input)
+    return destinationNode
+  }*/
   node.preserveFormantShave = (enabled: boolean) => {
     workletNode.port.postMessage({ event: 'preserve', preserve: enabled })
   }

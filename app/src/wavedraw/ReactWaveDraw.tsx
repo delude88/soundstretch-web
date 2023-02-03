@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import './ReactWaveDraw.css'
 import WaveDraw from './WaveDraw'
-import { createRubberBandNode } from 'soundstretch-web'
+import { createRubberBandNode, createRubberBandNodeForTone } from 'soundstretch-web'
 import { IoPlayOutline, IoStopOutline } from 'react-icons/io5'
+import { USE_TONE } from './config'
+import * as Tone from "tone"
 
 const ReactWaveDraw = ({ audioContext, audioBuffer, playbackRate, detune }: { audioContext?: AudioContext, audioBuffer?: AudioBuffer, playbackRate?: number, detune?: number }) => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -15,9 +17,10 @@ const ReactWaveDraw = ({ audioContext, audioBuffer, playbackRate, detune }: { au
       const ws = new WaveDraw({
         container,
         audioContext,
-        createBuffer: (ctx) => createRubberBandNode(ctx, `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`, {
-          //outputChannelCount: [2]
-        }),
+        createBuffer: (ctx) =>
+          USE_TONE
+            ? createRubberBandNodeForTone(`${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`)
+            : createRubberBandNode(ctx, `${process.env.PUBLIC_URL}/rubberband-realtime-processor.js`)
       })
       setWaveSurfer(ws)
       return () => {
@@ -55,6 +58,7 @@ const ReactWaveDraw = ({ audioContext, audioBuffer, playbackRate, detune }: { au
   }, [waveSurfer, playbackRate])
 
   const handlePlaybackButton = useCallback(() => {
+    Tone.start()
     if(audioContext) {
       audioContext.resume()
         .then(() => setPlaying(prev => !prev))

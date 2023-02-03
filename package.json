@@ -37,7 +37,7 @@
     "dev": "webpack --mode=development --watch",
     "build": "npm run build:wasm && npm run build:worklet && npm run build:web",
     "build:worklet": "tsc -b src/worklet/tsconfig.json && webpack --mode=production",
-    "build:wasm": "cd wasm && bash ./build.sh && cd .. && cp wasm/build/*.js public/",
+    "build:wasm": "cd wasm && bash ./build.sh && cd .. && cp wasm/build/*.js public/ && cp public/*.js app/public/",
     "build:web": "tsc -b src/web/tsconfig.cjs.json src/web/tsconfig.esm.json src/web/tsconfig.esm5.json src/web/tsconfig.types.json"
   },
   "browser": {

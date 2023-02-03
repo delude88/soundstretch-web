@@ -1,3 +1,5 @@
+import * as Tone from "tone"
+import { USE_TONE } from './config'
 /**
  *
  * @param data The raw audio data array, probably several million samples long
@@ -124,16 +126,27 @@ class WaveDraw {
 
   private async playInternal() {
     if (this._buffer) {
-      console.info('REINIT BUFFER')
-      this._sourceNode?.disconnect(this._context.destination)
+      console.info('[WaveDraw] play: Disconnect')
+      this._sourceNode?.disconnect()
+      console.info('[WaveDraw] play: Stop')
       this._sourceNode?.stop()
       this._sourceNode = undefined
+      console.info('[WaveDraw] play: Creating')
       this._sourceNode = await this._createBuffer(this._context)
+      console.info('[WaveDraw] play: Set values')
       if(this._playbackRate !== 1) this._sourceNode.playbackRate.setValueAtTime(this._playbackRate, 0)
       if(this._detune !== 0) this._sourceNode.detune.setValueAtTime(this._detune, 0)
-      this._sourceNode.connect(this._context.destination)
+      if(USE_TONE) {
+        console.info('[WaveDraw] play: Connect using TONE')
+        Tone.connect(this._sourceNode, Tone.getDestination())
+      } else{
+        console.info('[WaveDraw] play: Connect using native')
+        this._sourceNode.connect(this._context.destination)
+      }
       this._sourceNode.buffer = this._buffer
+      console.info('[WaveDraw] play: Start')
       this._sourceNode.start(0, this._playMark / this._buffer.sampleRate)
+      console.info('[WaveDraw] play: Finished')
     }
   }
 
@@ -154,14 +167,18 @@ class WaveDraw {
 
   pause() {
     this._playing = false
-    this._sourceNode?.disconnect(this._context.destination)
+    console.info('[WaveDraw] pause: disconnect')
+    this._sourceNode?.disconnect()
+    console.info('[WaveDraw] pause: stop')
     this._sourceNode?.stop()
     this._sourceNode = undefined
   }
 
   stop() {
     this._playing = false
-    this._sourceNode?.disconnect(this._context.destination)
+    console.info('[WaveDraw] stop: disconnect')
+    this._sourceNode?.disconnect()
+    console.info('[WaveDraw] stop: stop')
     this._sourceNode?.stop()
     this._sourceNode = undefined
     this._playMark = 0

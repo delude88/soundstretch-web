@@ -1,5 +1,4 @@
 #include "emscripten/bind.h"
-#include "OfflineRubberBand.h"
 #include "RealtimeRubberBand.h"
 
 using namespace emscripten;

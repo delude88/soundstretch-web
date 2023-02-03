@@ -109,6 +109,7 @@ const usePlayer = (audioContext: AudioContext, audioBuffer?: AudioBuffer) => {
   useEffect(() => {
     // CREATE AUDIO SOURCE NODE
     if (module && audioBuffer) {
+      console.info("usePlayer: init audio")
       let audioBufferSourceNode: AudioBufferSourceNode | undefined
       (async () => {
         if (engine === 'tonejs') {

@@ -5,10 +5,15 @@ import { Engine, Method, usePlayer } from './usePlayer'
 import { useAudioFileChooser } from './useAudioFileChooser'
 import ReactWaveDraw from './wavedraw/ReactWaveDraw'
 import { IoPlayOutline, IoStopOutline } from 'react-icons/io5'
+import { PlayOverlay } from './PlayOverlay'
+import Test from './Test'
+
+const INITIAL_AUDIO_URL = `${process.env.PUBLIC_URL}/laught44100.wav`
 
 function App() {
-  const audioContext = useMemo(() => new AudioContext(), [])
-  const { audioBuffer, handleFileInputChange } = useAudioFileChooser(audioContext, `${process.env.PUBLIC_URL}/stereo.mp3`)
+  // @ts-ignore
+  const audioContext = useMemo(() => new (window.AudioContext || window.webkitAudioContext)(), [])
+  const { audioBuffer, handleFileInputChange } = useAudioFileChooser(audioContext, INITIAL_AUDIO_URL)
   const {
     method,
     engine,
@@ -26,17 +31,10 @@ function App() {
   const [pitch, setPitch] = useState<number>(0)
 
   useEffect(() => {
-    if(audioContext && audioBuffer) {
-      const first = new AudioBufferSourceNode(audioContext)
-      first.buffer = audioBuffer
-      console.log("AudioBufferSourceNode", first, first.numberOfOutputs)
-      first.connect(audioContext.destination)
-      //first.start()
-      return () => {
-        //first.stop()
-      }
+    if(audioContext) {
+      console.info("Samle rate", audioContext.sampleRate)
     }
-  }, [audioContext, audioBuffer])
+  }, [audioContext])
 
   useEffect(() => {
     setTempoInPlayer(tempo)
@@ -57,6 +55,7 @@ function App() {
 
   return (
     <div className='App'>
+
       <header className='App-header'>
         <img src={logo} className='App-logo' alt='logo' />
         <label>
@@ -116,7 +115,11 @@ function App() {
         <p>
           {bpm ? `${bpm} beats per minute` : ''}
         </p>
+        <h3>Just run them</h3>
+        <Test audioContext={audioContext} url={INITIAL_AUDIO_URL}/>
+        <br/>
       </header>
+      <PlayOverlay audioContext={audioContext}/>
     </div>
   )
 }

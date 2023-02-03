@@ -1,5 +1,4 @@
 
-#include <iostream>
 #include <chrono>
 #include <thread>
 #include "SoundStretch.h"
@@ -32,7 +31,6 @@ void testRubberBand() {
 
     auto start_pad = rubberBand->getPreferredStartPad();
     auto start_delay = rubberBand->getStartDelay();
-    std::cout << "start_pad=" << start_pad << " start_delay=" << start_delay << std::endl;
 
     do {
         // Add start pad if applicable
@@ -40,7 +38,6 @@ void testRubberBand() {
             auto pad = new float[channel_count * start_pad];
             rubberBand->push(reinterpret_cast<uintptr_t>(&pad[0]), start_pad);
             delete[] pad;
-            std::cout << "Written " << start_pad << " start pad samples" << std::endl;
             start_pad = 0;
         }
 
@@ -54,7 +51,6 @@ void testRubberBand() {
             // Skip start delay first
             if(rubberBand->available() >= start_delay) {
                 auto actual = rubberBand->pull(reinterpret_cast<uintptr_t>(&output[0]), start_delay);
-                std::cout << "Skipped " << actual << " of " << start_delay << " start delay samples!" << std::endl;
                 start_delay -= actual;
             }
         } else {
@@ -73,10 +69,6 @@ void testRubberBand() {
         read_pos += rubberBand->pull(reinterpret_cast<uintptr_t>(&output[read_pos]), buffer_size);
     }
 
-    std::cout << "done!" << std::endl;
-
-    std::cout << "readpos=" << read_pos << " writepos=" << write_pos << " difference=" << write_pos - read_pos << std::endl;
-
     delete rubberBand;
 }
 
@@ -84,7 +76,6 @@ void testSoundStretch() {
     auto buffer_size = 128;
     auto channel_count = 2;
     auto *stretcher = new SoundStretch(48000, channel_count);
-    std::cout << "Hello stretcher " << SoundStretch::getVersion() << std::endl;
     stretcher->setPitch(1.2);
     stretcher->setTempo(1.2);
     auto my_samples = new float *[channel_count];
@@ -99,7 +90,6 @@ void testSoundStretch() {
     stretcher->push(my_sample_pointer, buffer_size);
     stretcher->push(my_sample_pointer, buffer_size);
     stretcher->push(my_sample_pointer, buffer_size);
-    std::cout << "Have now " << stretcher->available() << " samples" << std::endl;
     delete stretcher;
 }
 

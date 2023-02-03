@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <script type='worklet'>
+  registerProcessor('any-worklet', class AnyWorklet extends AudioWorkletProcessor {
+    constructor() {
+      super();
+      this.phase = 0;
+    }
+    process(input, output, parameters) {
+      const channel = output[0][0];
+      for (let i = 0; i < channel.length; ++i) {
+          channel[i] = Math.sin(this.phase);
+          this.phase += 0.1;
+      }
+      return true;
+    }
+  });
+  </script>
+  <script>
+    function playOscillator(audioContext) {
+      const oscillator = audioContext.createOscillator();
+      oscillator.connect(audioContext.destination);
+      oscillator.frequency.value = 440;
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 2);
+      return new Promise((resolve) => {
+        oscillator.onended = () => resolve();
+      });
+    }
+    function playWorklet(audioContext) {
+      const workletScript = document.querySelector('script[type=worklet]');
+      const blob = new Blob([workletScript.innerText], { type: 'application/javascript' });
+      const url = URL.createObjectURL(blob);
+      return audioContext.audioWorklet.addModule(url).then(() => {
+        const worklet = new AudioWorkletNode(audioContext, 'any-worklet');
+        worklet.connect(audioContext.destination);
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            worklet.disconnect();
+            resolve();
+          }, 2000);
+        })
+      });
+    }
+    function run() {
+      const audioContext = new AudioContext();
+      audioContext.resume()
+        .then(() => {
+          console.log("Playing oscillator for 2 seconds");
+          return playOscillator(audioContext);
+        })
+        .then(() => {
+          console.log("Load and play worklet for 2 seconds");
+          return playWorklet(audioContext);
+        })
+        .then(() => {
+          console.log("Playing oscillator again for 2 seconds");
+          return playOscillator(audioContext);
+        })
+        .then(() => {
+          console.log("Finished, cleaning up");
+          audioContext.close();
+        })
+        .catch(err => console.error(err));
+    }
+  </script>
+</head>
+<body>
+<h1>Fixme: iOS AudioWorklet bug</h1>
+<p>
+  The following run will perform the following steps:
+</p>
+<ol>
+  <li>Playing an oscillator node for 2 seconds</li>
+  <li>Loading and playing an AudioWorklet for 2 seconds (generating a sinus sound)</li>
+  <li>Playing an oscillator node for 2 seconds (again)</li>
+</ol>
+<p>
+  Notice how the sound gets affected on the second and third step on iOS devices (WebKit).
+  It sounds like an internal sample rate mismatch ?!?
+  Hope this test helps!
+  :-)
+</p>
+<input type='submit' value='Run' onclick='run(); return false;' />
+</body>
+</html>

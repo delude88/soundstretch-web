@@ -8,11 +8,11 @@ class Float32ChannelTransport implements ChannelTransport<Float32Array[]> {
   private _closed = false
 
   constructor(module: EmscriptenModule, sampleSize: number, channelCount: number = 1) {
-    this._module = module
     if (sampleSize < 1) throw new Error('Invalid sampleSize')
     this._sampleSize = sampleSize
     if (channelCount < 1) throw new Error('Invalid channelCount')
     this._channelCount = channelCount
+    this._module = module
     this._ptr = this._module._malloc(this._channelCount * this._sampleSize * Float32Array.BYTES_PER_ELEMENT)
   }
 

@@ -3,7 +3,6 @@
 //
 
 #include "OfflineRubberBand.h"
-#include <iostream>
 #include <cmath>
 
 const RubberBand::RubberBandStretcher::Options kOptions = RubberBand::RubberBandStretcher::OptionProcessOffline |
@@ -46,15 +45,9 @@ void OfflineRubberBand::setInput(uintptr_t input_ptr, size_t input_size) {
             sum1 += input[s + c * _input_sample_size];
             sum2 += _input[c][s];
         }
-        std::cout << "OfflineRubberBand::setInput copied " << _input_sample_size << " samples into channel " << c
-                  << " sum1="
-                  << sum1 << " sum2=" << sum2 << std::endl;
     }
-    std::cout << "Studying" << std::endl;
     _stretcher->study(_input, _input_sample_size, true);
-    std::cout << "Preprocessing" << std::endl;
     process();
-    std::cout << "Ready to be pulled :-)" << std::endl;
 }
 
 size_t OfflineRubberBand::pull(uintptr_t output_ptr, size_t output_size) {
@@ -67,7 +60,6 @@ size_t OfflineRubberBand::pull(uintptr_t output_ptr, size_t output_size) {
         process();
         num_samples_pullable = _num_samples_processed - _num_samples_pulled;
         if (num_samples_pullable_before <= num_samples_pullable) {
-            std::cerr << "Nothing fetched?!? Maybe timeout?" << std::endl;
             return 0;
         }
     }

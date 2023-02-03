@@ -6,9 +6,9 @@ project(wasm)
 #endif ()
 
 set(CMAKE_CXX_STANDARD 17)
-set(OPTIMIZATION_FLAGS "-O3 -flto -std=c++17")
+set(OPTIMIZATION_FLAGS "-std=c++17 -O3 -flto -fno-rtti")
 if (CMAKE_CXX_COMPILER MATCHES "/em\\+\\+(-[a-zA-Z0-9.])?$")
-    set(OPTIMIZATION_FLAGS "${OPTIMIZATION_FLAGS} -Wno-warn-absolute-paths  --profiling")
+    set(OPTIMIZATION_FLAGS "${OPTIMIZATION_FLAGS} -Wno-warn-absolute-paths -DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0")
 endif ()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZATION_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPTIMIZATION_FLAGS}")
@@ -99,6 +99,7 @@ set_target_properties(soundtouch
         -s FILESYSTEM=0 \
         -s ASSERTIONS=0 \
         -s MODULARIZE=1 \
+        -s EXPORTED_FUNCTIONS=_malloc,_free \
         -s SINGLE_FILE=1"
         )
 
@@ -112,7 +113,25 @@ target_link_libraries(rubberband
         rubberbandclasses
         embind
         )
+set_target_properties(rubberband
+        PROPERTIES
+        LINK_FLAGS
+        "${OPTIMIZATION_FLAGS} \
+        -s WASM=1 \
+        -s ALLOW_MEMORY_GROWTH=1 \
+        -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
+        -s ENVIRONMENT=web \
+        -s AUTO_JS_LIBRARIES=0 \
+        -s DISABLE_EXCEPTION_CATCHING=1 \
+        -s ELIMINATE_DUPLICATE_FUNCTIONS=1 \
+        -s FILESYSTEM=0 \
+        -s ASSERTIONS=0 \
+        -s MODULARIZE=1 \
+        -s EXPORTED_FUNCTIONS=_malloc,_free \
+        -s SINGLE_FILE=1"
+        )
 
+#[[
 set_target_properties(rubberband
         PROPERTIES
         LINK_FLAGS
@@ -123,7 +142,10 @@ set_target_properties(rubberband
         -s ENVIRONMENT=web \
         -s AUTO_JS_LIBRARIES=0 \
         -s FILESYSTEM=0 \
-        -s ASSERTIONS=0 \
+        -s ASSERTIONS=1 \
+        -s ELIMINATE_DUPLICATE_FUNCTIONS=1 \
         -s MODULARIZE=1 \
+        -s EXPORTED_FUNCTIONS=_malloc,_free \
         -s SINGLE_FILE=1"
         )
+]]

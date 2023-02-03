@@ -9,6 +9,8 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
   let _loop: boolean = false
   let _loopStart: number = 0
   let _loopEnd: number = 0
+  let _reportInterval: NodeJS.Timeout | undefined = undefined
+
   const _start = (offset: number = 0, duration?: number) => {
     if (_buffer) {
       // offset is in seconds, convert it, 1s = sampleRate, 2s = 2* sampleRate
@@ -24,6 +26,10 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
         loopEnd: _loopEnd
       }
       workletNode.port.postMessage(msg)
+
+      _reportInterval = setInterval(() => {
+        workletNode.port.postMessage({ event: 'report' })
+      }, 2000)
     }
   }
 
@@ -43,7 +49,7 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
     _started = true
     if (when === 0 || when < workletNode.context.currentTime) {
       // Start directly
-      _start(offset, duration)
+      _start(0, duration)
     } else {
       // Start delayed
       const timeout = (when - workletNode.context.currentTime) * 1000
@@ -61,8 +67,10 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
     }
     const _stop = () => {
       clearTimeout(_startTimeout)
+      clearInterval(_reportInterval)
       _startTimeout = undefined
       _stopTimeout = undefined
+      _reportInterval = undefined
       workletNode.port.postMessage({ event: 'stop' })
     }
     if (when === 0 || when < workletNode.context.currentTime) {
@@ -92,6 +100,7 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
           const source = cloneArrayBuffer(_buffer.getChannelData(channel).buffer)
           channels.push(source)
         }
+        console.info("BUFFER", _buffer)
         workletNode.port.postMessage({
             event: 'buffer',
             length: _buffer.length,
@@ -163,6 +172,11 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
           node.onended(eventObj)
         }
         node.close()
+      } else if (event === 'report') {
+        const report = data['report'] as { underruns: number, runs: number }
+        const currentSampleRate = data['sampleRate'] as number
+        const currentBufferSampleRate = data['bufferSampleRate'] as number
+        console.log(`Quality: ${report.underruns}/${report.runs} underruns per run = ${(1 - (report.underruns / report.runs)) * 100}% quality. Worklet @ ${currentSampleRate}Hz, worklet buffer @ ${currentBufferSampleRate}Hz, buffer @ ${_buffer?.sampleRate || 'not set'} context @ ${workletNode.context.sampleRate}`)
       }
     }
   }
