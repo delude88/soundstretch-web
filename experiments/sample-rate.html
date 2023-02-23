@@ -19,6 +19,14 @@
   });
   </script>
   <script>
+    function reset() {
+      const el = document.getElementById("text");
+      el.value = '';
+    }
+    function print(text) {
+      const el = document.getElementById("text");
+      el.value = el.value.length > 0 ? `${el.value}\n${text}` : text;
+    }
     function playOscillator(audioContext) {
       const oscillator = audioContext.createOscillator();
       oscillator.connect(audioContext.destination);
@@ -45,22 +53,26 @@
       });
     }
     function run() {
-      const audioContext = new AudioContext();
+      reset();
+      const audioContext = new AudioContext({
+        sampleRate: 48000
+      });
       audioContext.resume()
         .then(() => {
-          console.log("Playing oscillator for 2 seconds");
+          print(`Audio context has sample rate of ${audioContext.sampleRate}`);
+          print("Playing oscillator for 2 seconds");
           return playOscillator(audioContext);
         })
         .then(() => {
-          console.log("Load and play worklet for 2 seconds");
+          print("Load and play worklet for 2 seconds");
           return playWorklet(audioContext);
         })
         .then(() => {
-          console.log("Playing oscillator again for 2 seconds");
+          print("Playing oscillator again for 2 seconds");
           return playOscillator(audioContext);
         })
         .then(() => {
-          console.log("Finished, cleaning up");
+          print("Finished, cleaning up");
           audioContext.close();
         })
         .catch(err => console.error(err));
@@ -83,6 +95,9 @@
   Hope this test helps!
   :-)
 </p>
+<div>
+  <textarea readonly id='text' rows='10' cols='40'></textarea>
+</div>
 <input type='submit' value='Run' onclick='run(); return false;' />
 </body>
 </html>

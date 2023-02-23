@@ -4,7 +4,7 @@ import { Float32ChannelTransport } from '../web/Float32ChannelTransport'
 
 const MAXIMUM_INPUT_SIZE = 8196
 const RENDER_QUANTUM_FRAMES = 128
-
+const DEBUG = true
 class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
@@ -66,6 +66,7 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
     this.port.onmessage = ({ data }) => {
       if (typeof data === 'object' && data['event']) {
         const { event } = data
+        console.log(`[rubberband-realtime-processor] ${event}`, data)
         switch (event) {
           case 'buffer': {
             if (data.channels === undefined) throw new Error('Missing channels key')
@@ -238,10 +239,12 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
           actual
         )
         this.api.push(this.inputBuffer.getPointer(), actual)
+        const bufferPositionBefore = this.bufferPosition
         this.bufferPosition += actual
         // CHECK THIS OUT
-        if (this.loop && this.loopEnd && this.bufferPosition >= this.loopEnd) {
+        if (this.loop && this.loopEnd && this.bufferPosition >= this.loopEnd && bufferPositionBefore <= this.loopEnd) {
           this.bufferPosition = this.loopStart
+          console.log(`[rubberband-realtime-processor] Looping buffer position}`)
         }
       }
     }
@@ -257,8 +260,10 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
         if (this.playPosition < this.playEndPosition) {
           // Loop?
           if (this.loop && this.loopEnd) {
-            if (this.playPosition >= this.loopEnd) {
+            //if (this.playPosition >= this.loopEnd) {
+            if (this.playPosition >= this.loopEnd && (this.playPosition - RENDER_QUANTUM_FRAMES) <= this.loopEnd) {
               // Go back to loopStart
+              console.log(`[rubberband-realtime-processor] Looping play position}`)
               this.playPosition = this.loopStart
             }
           }

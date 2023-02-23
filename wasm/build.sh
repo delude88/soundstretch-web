@@ -25,6 +25,7 @@ if [ ! -f ".installed" ]; then
     # Install required toolset
     fetch_brew_dependency "cmake"
     fetch_brew_dependency "emscripten"
+    fetch_brew_dependency "libomp"
   fi
   touch .installed
 

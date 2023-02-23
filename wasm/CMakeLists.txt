@@ -13,6 +13,13 @@ endif ()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPTIMIZATION_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPTIMIZATION_FLAGS}")
 
+list(APPEND CMAKE_MODULE_PATH
+  "${CMAKE_SOURCE_DIR}/cmake/module/")
+#if(APPLE)
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fopenmp")
+    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fopenmp")
+#endif(APPLE)
+
 add_subdirectory(lib/soundtouch)
 
 add_library(soundtouchclasses
@@ -29,14 +36,15 @@ target_include_directories(soundtouchclasses
 target_link_libraries(soundtouchclasses
         PUBLIC
         SoundTouch
+        #omp
         )
 
 add_library(rubberbandofficial
-        lib/rubberband-3.0.0/single/RubberBandSingle.cpp
+        lib/rubberband-3.1.2/single/RubberBandSingle.cpp
         )
 target_include_directories(rubberbandofficial
         PUBLIC
-        lib/rubberband-3.0.0/rubberband)
+        lib/rubberband-3.1.2/rubberband)
 
 add_library(rubberbandclasses
         src/RealtimeRubberBand.cpp
@@ -44,7 +52,7 @@ add_library(rubberbandclasses
         )
 target_include_directories(rubberbandclasses
         PUBLIC
-        lib/rubberband-3.0.0/rubberband
+        lib/rubberband-3.1.2/rubberband
         )
 target_link_libraries(rubberbandclasses
         PUBLIC

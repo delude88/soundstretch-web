@@ -83,6 +83,9 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
 
   // Close
   node.close = () => {
+    if(_started) {
+      node.stop();
+    }
     workletNode.port.postMessage({ event: 'close' })
   }
 

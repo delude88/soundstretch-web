@@ -5,7 +5,7 @@ if [ ! -d "soundtouch" ]; then
 fi
 
 # Download and extract rubberband
-export RUBBERBAND_VERSION="3.0.0"
+export RUBBERBAND_VERSION="3.1.2"
 if [ ! -d "rubberband-${RUBBERBAND_VERSION}" ]; then
   echo "Fetching rubberband"
   curl https://breakfastquay.com/files/releases/rubberband-${RUBBERBAND_VERSION}.tar.bz2 | tar -xj
