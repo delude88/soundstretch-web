@@ -5,6 +5,7 @@ import { Float32ChannelTransport } from '../web/Float32ChannelTransport'
 const MAXIMUM_INPUT_SIZE = 8196
 const RENDER_QUANTUM_FRAMES = 128
 const DEBUG = true
+
 class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
@@ -60,13 +61,14 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
 
   constructor() {
     super()
+    console.log(`[rubberband-realtime-processor] CONSTRUCTOR`)
     this.port.onmessageerror = (err) => {
       console.error('onmessageerror', err)
     }
     this.port.onmessage = ({ data }) => {
       if (typeof data === 'object' && data['event']) {
         const { event } = data
-        console.log(`[rubberband-realtime-processor] ${event}`, data)
+        //console.log(`[rubberband-realtime-processor] ${event}`, data)
         switch (event) {
           case 'buffer': {
             if (data.channels === undefined) throw new Error('Missing channels key')
@@ -94,6 +96,7 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
             this.bufferEndPosition = this.buffer.length > 0 ? this.buffer[0].length : 0
             this.playEndPosition = Math.round(this.bufferEndPosition / this.playbackRate)
             this.reInit()
+            console.info(`[rubberband-realtime-processor][buffer] loop=${this.loop ? 'enabled' : 'disabled'} loopStart=${this.loopStart} loopEnd=${this.loopEnd} playPosition=${this.playPosition} bufferPosition=${this.bufferPosition}`)
             break
           }
           case 'start': {
@@ -116,25 +119,30 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
               if (data.duration < 0) throw new Error(`Invalid duration key ${data.duration}`)
               this.duration = data.duration
             }
+            console.info(`[rubberband-realtime-processor][start] loop=${this.loop ? 'enabled' : 'disabled'} loopStart=${this.loopStart} loopEnd=${this.loopEnd} playPosition=${this.playPosition} bufferPosition=${this.bufferPosition}`)
             break
           }
           case 'stop': {
+            console.log(`[rubberband-realtime-processor] stop`)
             this.playing = false
             break
           }
           case 'loop': {
             if (data.loop === undefined) throw new Error('Missing loop key')
             this.loop = data.loop
+            console.info(`[rubberband-realtime-processor][loop] loop=${this.loop ? 'enabled' : 'disabled'} loopStart=${this.loopStart} loopEnd=${this.loopEnd} playPosition=${this.playPosition} bufferPosition=${this.bufferPosition}`)
             break
           }
           case 'loopStart': {
             if (data.loopStart === undefined) throw new Error('Missing loopStart key')
             this.loopStart = data.loopStart * this.bufferSampleRate
+            console.info(`[rubberband-realtime-processor][loopStart] loop=${this.loop ? 'enabled' : 'disabled'} loopStart=${this.loopStart} loopEnd=${this.loopEnd} playPosition=${this.playPosition} bufferPosition=${this.bufferPosition}`)
             break
           }
           case 'loopEnd': {
             if (data.loopEnd === undefined) throw new Error('Missing loopEnd key')
             this.loopEnd = data.loopEnd * this.bufferSampleRate
+            console.info(`[rubberband-realtime-processor][loopEnd] loop=${this.loop ? 'enabled' : 'disabled'} loopStart=${this.loopStart} loopEnd=${this.loopEnd} playPosition=${this.playPosition} bufferPosition=${this.bufferPosition}`)
             break
           }
           case 'preserve': {
@@ -144,10 +152,16 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
             break
           }
           case 'report': {
-            this.port.postMessage({ event: 'report', report: this.quality, sampleRate: sampleRate, bufferSampleRate: this.bufferSampleRate })
+            this.port.postMessage({
+              event: 'report',
+              report: this.quality,
+              sampleRate: sampleRate,
+              bufferSampleRate: this.bufferSampleRate
+            })
             break
           }
           case 'close': {
+            console.log(`[rubberband-realtime-processor] close`)
             this.close()
             break
           }
@@ -244,7 +258,7 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
         // CHECK THIS OUT
         if (this.loop && this.loopEnd && this.bufferPosition >= this.loopEnd && bufferPositionBefore <= this.loopEnd) {
           this.bufferPosition = this.loopStart
-          console.log(`[rubberband-realtime-processor] Looping buffer position}`)
+          console.log(`[rubberband-realtime-processor] Looping buffer position back to ${this.loopStart}`)
         }
       }
     }
@@ -258,16 +272,6 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
       // Buffered chain
       if (this.playing) {
         if (this.playPosition < this.playEndPosition) {
-          // Loop?
-          if (this.loop && this.loopEnd) {
-            //if (this.playPosition >= this.loopEnd) {
-            if (this.playPosition >= this.loopEnd && (this.playPosition - RENDER_QUANTUM_FRAMES) <= this.loopEnd) {
-              // Go back to loopStart
-              console.log(`[rubberband-realtime-processor] Looping play position}`)
-              this.playPosition = this.loopStart
-            }
-          }
-
           if (this.api && this.outputBuffer) {
             if (this.startDelay > 0) {
               const available = this.api.available()
@@ -285,10 +289,18 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
                   this.outputBuffer.read(output)
                 }
                 this.outputBuffer.read(outputs[0])
-                this.playPosition += actual
+                // Did we leave the end of a loop?
+                if (this.loop && this.loopEnd && this.playPosition <= this.loopEnd && this.loopEnd <= (this.playPosition + actual)) {
+                  // Go back to loopStart
+                  console.log(`[rubberband-realtime-processor] Looping play position to ${this.loopStart}`)
+                  this.playPosition = this.loopStart
+                } else {
+                  this.playPosition += actual
+                }
               } else {
-                if(this.bufferPosition >= this.bufferEndPosition) {
+                if (this.bufferPosition >= this.bufferEndPosition) {
                   // This is the end my friend
+                  console.log(`[rubberband-realtime-processor] GAME OVER, bufferPosition behind or equals bufferEndPosition`)
                   this.port.postMessage({ event: 'ended' })
                   this.close()
                   return false
@@ -299,6 +311,7 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
             }
           }
         } else {
+          console.log(`[rubberband-realtime-processor] GAME OVER, playPosition behind playEndPosition`)
           this.port.postMessage({ event: 'ended' })
           this.close()
           return false
