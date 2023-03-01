@@ -243,10 +243,10 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
           actual
         )
         this.api.push(this.inputBuffer.getPointer(), actual)
-        const bufferPositionBefore = this.bufferPosition
 
         // CHECK THIS OUT
         if (this.loop && this.loopEnd && this.bufferPosition <= this.loopEnd && (this.bufferPosition + actual) >= this.loopEnd) {
+
           this.bufferPosition = this.loopStart
         }  else {
           this.bufferPosition += actual
