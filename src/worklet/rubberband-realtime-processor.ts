@@ -42,6 +42,10 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
   private loop: boolean = false
   private loopStart: number = 0
   private loopEnd?: number
+  private bufferLoopStart: number = 0
+  private bufferLoopEnd?: number
+  private playLoopStart: number = 0
+  private playLoopEnd?: number
   private preserve?: boolean
   private bufferSampleRate: number = sampleRate
   private offset: number = 0
@@ -78,20 +82,16 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
             if (data.loop !== undefined) {
               this.loop = data.loop
             }
-            if (data.loopStart) {
-              this.loopStart = data.loopStart * this.bufferSampleRate // seconds to samples
-            }
-            if (data.loopEnd) {
-              this.loopEnd = data.loopEnd * this.bufferSampleRate // seconds to samples
-            }
-            if (data.duration) {
-              this.duration = data.duration
-            }
             this.offset = data.offset ? Math.round(data.offset) : 0
             this.bufferPosition = this.offset
             this.playPosition = Math.round(this.offset / this.playbackRate)
             this.bufferEndPosition = this.buffer.length > 0 ? this.buffer[0].length : 0
             this.playEndPosition = Math.round(this.bufferEndPosition / this.playbackRate)
+            this.setLoopStart(data.loopStart || this.loopStart)
+            this.setLoopEnd(data.loopEnd || this.loopEnd)
+            if (data.duration) {
+              this.duration = data.duration
+            }
             this.reInit()
             break
           }
@@ -105,16 +105,12 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
             if (data.loop !== undefined) {
               this.loop = data.loop
             }
-            if (data.loopStart) {
-              this.loopStart = data.loopStart * this.bufferSampleRate // seconds to samples
-            }
-            if (data.loopEnd) {
-              this.loopEnd = data.loopEnd * this.bufferSampleRate // seconds to samples
-            }
             if (data.duration) {
               if (data.duration < 0) throw new Error(`Invalid duration key ${data.duration}`)
               this.duration = data.duration
             }
+            this.setLoopStart(data.loopStart || this.loopStart)
+            this.setLoopEnd(data.loopEnd || this.loopEnd)
             break
           }
           case 'stop': {
@@ -128,12 +124,12 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
           }
           case 'loopStart': {
             if (data.loopStart === undefined) throw new Error('Missing loopStart key')
-            this.loopStart = data.loopStart * this.bufferSampleRate
+            this.setLoopStart(data.loopStart)
             break
           }
           case 'loopEnd': {
             if (data.loopEnd === undefined) throw new Error('Missing loopEnd key')
-            this.loopEnd = data.loopEnd * this.bufferSampleRate
+            this.setLoopEnd(data.loopEnd)
             break
           }
           case 'preserve': {
@@ -207,6 +203,18 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
     }
   }
 
+  private setLoopStart(samples: number) {
+    this.loopStart = samples
+    this.bufferLoopStart = this.loopStart * this.bufferSampleRate // seconds to samples
+    this.playLoopStart = Math.round(this.bufferLoopStart / this.playbackRate)
+  }
+
+  private setLoopEnd(samples?: number) {
+    this.loopEnd = samples
+    this.bufferLoopEnd = this.loopEnd ? this.loopEnd * this.bufferSampleRate : undefined // seconds to samples
+    this.playLoopEnd = this.bufferLoopEnd ? Math.round(this.bufferLoopEnd / this.playbackRate) : undefined
+  }
+
   private setPlaybackRate(value: number) {
     if (this.playbackRate !== value) {
       const relativePlayPosition = this.playPosition * this.playbackRate
@@ -216,6 +224,8 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
       if (this.api) {
         this.api.setTimeRatio(1 / this.playbackRate)
       }
+      this.setLoopStart(this.loopStart)
+      this.setLoopEnd(this.loopEnd)
     }
   }
 
@@ -245,9 +255,8 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
         this.api.push(this.inputBuffer.getPointer(), actual)
 
         // CHECK THIS OUT
-        if (this.loop && this.loopEnd && this.bufferPosition <= this.loopEnd && (this.bufferPosition + actual) >= this.loopEnd) {
-
-          this.bufferPosition = this.loopStart
+        if (this.loop && this.bufferLoopEnd && this.bufferPosition <= this.bufferLoopEnd && (this.bufferPosition + actual) >= this.bufferLoopEnd) {
+          this.bufferPosition = this.bufferLoopStart
         }  else {
           this.bufferPosition += actual
         }
@@ -263,8 +272,10 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
       // Buffered chain
       if (this.playing) {
         if (this.playPosition < this.playEndPosition) {
+          // Play end not reached yet
           if (this.api && this.outputBuffer) {
             if (this.startDelay > 0) {
+              // Still inside start delay
               const available = this.api.available()
               if (available > 0) {
                 const actual = this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
@@ -273,37 +284,44 @@ class RubberbandRealtimeProcessor extends AudioWorkletProcessor {
             }
 
             if (this.startDelay <= 0) {
+              // We are playing (not inside start delay anymore)
               const available = this.api.available()
               if (available >= RENDER_QUANTUM_FRAMES) {
+                // We got enough samples to play
                 const actual = this.api.pull(this.outputBuffer.getPointer(), RENDER_QUANTUM_FRAMES)
                 for (const output of outputs) {
                   this.outputBuffer.read(output)
                 }
                 this.outputBuffer.read(outputs[0])
                 // Did we leave the end of a loop?
-                if (this.loop && this.loopEnd && this.playPosition <= this.loopEnd && this.loopEnd <= (this.playPosition + actual)) {
+                if (this.loop && this.playLoopEnd && this.playPosition <= this.playLoopEnd && this.playLoopEnd <= (this.playPosition + actual)) {
                   // Go back to loopStart
-                  this.playPosition = this.loopStart
+                  this.playPosition = this.playLoopStart
                 } else {
                   this.playPosition += actual
                 }
               } else {
+                // We got not enough samples to play
                 if (this.bufferPosition >= this.bufferEndPosition) {
-                  // This is the end my friend
+                  //console.info(`this.bufferPosition=${this.bufferPosition} after ${this.bufferEndPosition}, should end now?!?`)
                   this.port.postMessage({ event: 'ended' })
                   this.close()
                   return false
                 } else {
+                  // There is still data to feed, but we ran out of buffer - so the processor is too slow...
                   this.quality.underruns++
                 }
               }
             }
           }
         } else {
+          // Reached the end of the song
+          //console.info(`Finished playing playPosition=${this.playPosition}/${this.playEndPosition}`)
           this.port.postMessage({ event: 'ended' })
           this.close()
           return false
         }
+        // And feed more (if applicable)
         this.feedBuffer()
 
         this.quality.runs++
