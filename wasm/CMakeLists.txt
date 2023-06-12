@@ -40,11 +40,11 @@ target_link_libraries(soundtouchclasses
         )
 
 add_library(rubberbandofficial
-        lib/rubberband-3.1.2/single/RubberBandSingle.cpp
+        lib/rubberband-3.2.1/single/RubberBandSingle.cpp
         )
 target_include_directories(rubberbandofficial
         PUBLIC
-        lib/rubberband-3.1.2/rubberband)
+        lib/rubberband-3.2.1/rubberband)
 
 add_library(rubberbandclasses
         src/RealtimeRubberBand.cpp
@@ -52,7 +52,7 @@ add_library(rubberbandclasses
         )
 target_include_directories(rubberbandclasses
         PUBLIC
-        lib/rubberband-3.1.2/rubberband
+        lib/rubberband-3.2.1/rubberband
         )
 target_link_libraries(rubberbandclasses
         PUBLIC

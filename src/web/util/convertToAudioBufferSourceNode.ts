@@ -4,12 +4,12 @@ const convertToAudioBufferSourceNode = (workletNode: AudioWorkletNode): AudioBuf
   let node = workletNode as any
   let _buffer: AudioBuffer | null = null
   let _started: boolean = false
-  let _startTimeout: NodeJS.Timeout | undefined = undefined
-  let _stopTimeout: NodeJS.Timeout | undefined = undefined
+  let _startTimeout: number | undefined = undefined
+  let _stopTimeout: number | undefined = undefined
   let _loop: boolean = false
   let _loopStart: number = 0
   let _loopEnd: number = 0
-  let _reportInterval: NodeJS.Timeout | undefined = undefined
+  let _reportInterval: number | undefined = undefined
 
   const _start = (offset: number = 0, duration?: number) => {
     if (_buffer) {

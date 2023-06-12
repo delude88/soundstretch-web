@@ -13,7 +13,7 @@
 #if defined(USE_QUEUE)
 #include <queue>
 #endif
-#include "../lib/rubberband-3.0.0/src/common/RingBuffer.h"
+#include "../lib/rubberband-3.2.1/src/common/RingBuffer.h"
 
 
 class RealtimeRubberBand {
